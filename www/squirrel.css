@@ -1,0 +1,253 @@
+
+h1 {
+	font-family: arial;
+}
+
+body {
+	margin: 4 4 4 4;
+}
+
+table.topmenu {
+	font-family: arial, sans-serif;
+	width: 100%;
+}
+table.topmenu td.logo {
+	width: 40px;
+}
+table.topmenu td.title {
+	text-align: left;
+	font-weight: bold;
+}
+table.topmenu td.menu {
+	font-size: small;
+	text-align: right;
+	vertical-align: top;
+	padding:0 0 4px;
+}
+
+table.topmenu td.menu a:focus {
+	font-size: medium;
+	font-weight: bold;
+	text-align: right;
+	padding:0 0 8px;
+}
+
+table.station {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 0px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	border-collapse: collapse;
+    font:12px/12px arial;
+}
+
+table.station th {
+	background-color: #E6EFF7;
+    padding: 4px 6px; 
+    min-width:1px; 
+    white-space: nowrap; 
+    font:12px/12px arial;
+	border-collapse: collapse;
+	text-align: right;
+	font-weight: bold;
+}
+
+table.station th.title {
+	background-color: #E6EFF7;
+    padding: 4px 6px; 
+    min-width:1px; 
+    white-space: nowrap; 
+    font:12px/12px arial;
+	border-collapse: collapse;
+	text-align: center;
+	font-weight: bold;
+}
+
+table.station td {
+	border-width: 1px 1px 1px 1px;
+	padding: 6px 6px 6px 6px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	background-color: rgb(255, 255, 240);
+	border-collapse: collapse;
+}
+
+table.bssids2 {
+	border-width: 1px 1px 1px 1px;
+	padding: 2px;
+	border-spacing: 0px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	border-collapse: collapse;
+    font:12px/12px sans-serif;
+}
+
+table.bssids2 th {
+	font-weight: normal;
+	text-align: left;
+	padding-right: 10px;
+	padding-top: 4px;
+	padding-bottom: 2px;
+	padding-left: 4px;
+}
+
+
+table.bssids2 tr:nth-child(odd)		{background-color: #efefef;}
+table.bssids2 tr:nth-child(even)	{background-color: white;}
+table.bssids2 tr:first-child		{background-image:url('img/menubg.png');}
+table.bssids2 tr:first-child th		{padding-bottom: 4px;}
+table.bssids2 td.inactive			{font-weight: normal;}
+table.bssids2 td.active				{font-weight: bold;}
+
+
+table.bssids {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 0px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	border-collapse: collapse;
+	background-color: #d6d6d6;
+    font:12px/12px arial;
+}
+table.bssids th {
+	background-image:url('img/menubg.png');
+    padding: 4px 6px; 
+    min-width:1px; 
+    white-space: nowrap; 
+    font:12px/12px sans-serif;
+	font-weight: bold;
+	border-collapse: collapse;
+}
+table.bssids td {
+	border-width: 1px 1px 1px 1px;
+	padding: 3px 4px 3px 3px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	border-collapse: collapse;
+}
+
+
+table.bssids tr:nth-child(odd)	{background-color: #efefef;}
+table.bssids tr:nth-child(even) {background-color: white;}
+table.bssids tr:nth-child(odd).active	{background-color: #ffdddd;}
+table.bssids tr:nth-child(even).active {background-color: #ffeeee;}
+
+table.bssids td:first-child		{font: 12px/12px monospace;}
+table.bssids td.stacount		{text-align: center;}
+table.bssids td.power			{text-align: right;}
+table.bssids td.beacons			{text-align: right;}
+table.bssids td.datapackets		{text-align: right;}
+table.bssids td.channels		{text-align: center;}
+table.bssids td.speed			{text-align: center;}
+table.bssids td.encryption		{text-align: center;}
+table.bssids td.cipher			{text-align: center;}
+table.bssids td.auth			{text-align: center;}
+
+
+table.bssids td.index {
+        font-family: lucida console, monospace;
+        text-align: center;
+}
+table.bssids td.index a:focus {
+        font-family: lucida console, monospace;
+		background-color: #ddd;
+}
+
+table.bssids td.station {
+        font-family: lucida console, monospace;
+        font-size: x-small;
+}
+table.bssids td.station a:focus {
+        font-family: lucida console, monospace;
+        font-size: small;
+		font-weight: bold;
+}
+
+
+table.stations {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 0px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	border-collapse: collapse;
+	background-color: rgb(204, 204, 204);
+    font:12px/12px arial;
+}
+table.stations th {
+	border-width: 1px 1px 1px 1px;
+	padding: 2px 2px 2px 2px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	background-image:url('img/menubg.png');
+    padding: 4px 6px; 
+    min-width:1px; 
+    white-space: nowrap; 
+    font:12px/12px arial;
+}
+table.stations td {
+	border-width: 1px 1px 1px 1px;
+	padding: 2px 2px 2px 2px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+}
+
+table.stations tr:nth-child(odd)	{background-color: #efefef;}
+table.stations tr:nth-child(even)	{background-color: white;}
+table.stations tr.inactive			{font-weight: normal;}
+table.stations tr.active			{font-weight: bold;}
+
+table.probers {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 0px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	border-collapse: collapse;
+	background-color: rgb(204, 204, 204);
+    font:12px/12px arial;
+}
+table.probers th {
+	border-width: 0px;
+	padding: 2px 2px 2px 2px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+	background-image:url('img/menubg.png');
+    padding: 4px 6px; 
+    min-width:1px; 
+    white-space: nowrap; 
+    font:12px/12px sans-serif;
+	font-weight: bold;
+	cursor: default;
+}
+table.probers td {
+	border-width: 1px 1px 1px 1px;
+	padding: 3px 3px 3px 3px;
+	border-style: solid solid solid solid;
+	border-color: #d6d6d6 #d6d6d6 #d6d6d6 #d6d6d6;
+}
+table.probers td.mac {
+    font-family: lucida console, monospace;
+}
+table.probers td.power {
+	text-align: right;
+}
+table.probers td.probes {
+	text-align: right;
+}
+
+table.adapter th {
+	text-align: right;
+}
+
+table.probers tr:nth-child(odd)		{background-color: #eeefef;}
+table.probers tr:nth-child(even)	{background-color: white;}
+table.probers .active {font-weight:bold;}
+
+
+table.probers th.menu {
+	position: relative;
+}
+
+table.probers .dropdown {
+	position:absolute;
+	background-color: grey;
+}

@@ -1,0 +1,191 @@
+
+h1 {
+	font-family: fixed;
+}
+
+
+div.hexbytes {
+	font-family: monospace;
+}
+
+b.hexshade {
+	background-color: #4b6983;
+	color: white;
+	font-weight: normal;
+}
+
+body {
+ margin: 0px;
+}
+
+#details {
+ padding-left: 4px;
+}
+
+#summary table {
+ border-collapse:separate;
+ border-style:solid;
+ border-width:0px;
+ border-color:#000000;
+ border-spacing:0px;
+}
+#summarytable th {
+	border-style:outset;
+	background-color: #d4d0c8;
+	border-width:2px;
+	border-top-color: #eeeeee;
+	border-left-color: #eeeeee;
+	font:12px/12px sans-serif;
+	padding: 5px;
+	text-align: left;
+	cursor: default;
+}
+
+#summarytable td {
+	border-style:none;
+	background-color: #ffffff;
+	border-width:2px;
+	border-color: #ffffff;
+	font:12px/12px monospace;
+	padding-left: 4px;
+	padding-right: 16px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	cursor: default;
+}
+
+#summarytable td.number {
+	text-align: right;
+	padding-right: 4px;
+}
+
+#summarytable tr.selected {
+	background-color: #0a246a;
+	color:white;
+}
+#summarytable tr.selected td {
+	background-color: #0a246a;
+	color:white;
+}
+
+table.threepane {
+	background-color: #d4d0c8;
+	border-style: outset;
+	border-width: 1px;
+	border-spacing: 4px;
+}
+
+table.threepane td {
+	border-style:inset;
+	padding:0px;
+	border-width: 1px;
+	border-top-color: #000000;
+	border-left-color: #000000;
+	background-color: #ffffff;
+}
+
+table.hexpane td {
+	font: 12px/12px monospace;
+	border-style: none;
+}
+
+#hexbytes {
+    padding-left: 12px;
+	padding-right: 12px;
+}
+
+
+
+#domtree, #domtree ul, #domtree ul ul, #domtree ul ul ul, #domtree ul ul ul ul {
+  font-family: monospace;
+  list-style: none outside;
+  margin-right:0;
+  margin-left:0;
+  padding-left:0;
+  padding-right:0;
+  margin-top:0;
+  margin-bottom:0;
+  padding-top:0;
+  padding-bottom:0;
+}
+
+div:focus {
+  background-color:#0a246a;
+  color: white;
+}
+
+
+
+#domtree li.treenorm,
+#domtree li li.treenorm,
+#domtree li li li.treenorm,
+#domtree li li li li.treenorm {
+  padding-left: 16px;
+}
+
+#domtree li.treehide ul,
+#domtree li li.treehide ul,
+#domtree li li li.treehide ul,
+#domtree li li li li.treehide ul {
+  display: none;
+}
+
+
+#domtree li.treeshow ul,
+#domtree li li.treeshow ul,
+#domtree li li li.treeshow ul,
+#domtree li li li li.treeshow ul {
+  display: block;
+  padding-left: 16px;
+}
+
+#domtree li.treehide .clk,
+#domtree li li.treehide .clk,
+#domtree li li li.treehide .clk,
+#domtree li li li li.treehide .clk {
+  text-decoration: none;
+  cursor: default;
+  padding-left: 16px;
+  background: url('../plus.gif') no-repeat center left;
+}
+
+#domtree li.treehide .clk:focus,
+#domtree li li.treehide .clk:focus,
+#domtree li li li.treehide .clk:focus,
+#domtree li li li li.treehide .clk:focus {
+  text-decoration: none;
+  cursor: default;
+  padding-left: 16px;
+  background: url('../plus.gif') no-repeat center left #0a246a;
+  color:white;
+}
+
+#domtree li.treeshow .clk,
+#domtree li li.treeshow .clk,
+#domtree li li li.treeshow .clk,
+#domtree li li li li.treeshow .clk {
+  text-decoration: none;
+  cursor: default;
+  padding-left: 16px;
+  background: url('../minus.gif') no-repeat center left;
+}
+
+#domtree li.treeshow .clk:focus,
+#domtree li li.treeshow .clk:focus,
+#domtree li li li.treeshow .clk:focus,
+#domtree li li li li.treeshow .clk:focus {
+  text-decoration: none;
+  cursor: default;
+  padding-left: 16px;
+  background: url('../minus.gif') no-repeat center left #0a246a;
+  color:white;
+}
+
+#domtree li .clk2,
+#domtree li li .clk2,
+#domtree li li li .clk2,
+#domtree li li li li .clk2 {
+  cursor: default;
+}
+
+

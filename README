@@ -1,0 +1,21 @@
+HOW TO BUILD
+
+For Linux, type "make". This creates "bin/squirrel" binary.
+
+For Windows, choose the project that best fits your version of Visual Studio.
+(You don't need Cygwin, but that might work too).
+
+For everything else, start with the build/gcc4/Makefile as inspiration.
+The code is pretty portable, so shouldn't require much changes.
+
+
+HOW TO RUN
+
+This is a web-application. The 'squirrel' executable runs it's own
+webserver (default: port 1234). Connect to it with your browser at
+http://localhost:1234.
+
+This means you have to run the program from the "www" directory. For
+example, type "cd www" to go into that directory, then type something
+like "../bin/squirrel -i mon0" to start monitorign interface "mon0".
+

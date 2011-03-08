@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B8EA5235-E27D-4F62-BAD4-D74B981606DD}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>squirrel</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)..\..\bin\$(Configuration)\</OutDir>
+    <IntDir>..\..\tmp\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../src/module;../../src</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\display\dadapters.c" />
+    <ClCompile Include="..\..\src\display\dbeacon.c" />
+    <ClCompile Include="..\..\src\display\dbssid.c" />
+    <ClCompile Include="..\..\src\display\dbssidlist.c" />
+    <ClCompile Include="..\..\src\display\deventlist.c" />
+    <ClCompile Include="..\..\src\display\deventpkt.c" />
+    <ClCompile Include="..\..\src\display\display.c" />
+    <ClCompile Include="..\..\src\display\dprobes.c" />
+    <ClCompile Include="..\..\src\display\dstation.c" />
+    <ClCompile Include="..\..\src\display\dtopmenu.c" />
+    <ClCompile Include="..\..\src\display\dxmit.c" />
+    <ClCompile Include="..\..\src\module\hexval.c" />
+    <ClCompile Include="..\..\src\module\manuf.c" />
+    <ClCompile Include="..\..\src\module\mongoose.c" />
+    <ClCompile Include="..\..\src\module\mystring.c" />
+    <ClCompile Include="..\..\src\module\pcapfile.c" />
+    <ClCompile Include="..\..\src\module\pcaplive.c" />
+    <ClCompile Include="..\..\src\module\pixie.c" />
+    <ClCompile Include="..\..\src\module\sprintf_s.c" />
+    <ClCompile Include="..\..\src\netstack\stackarp.c" />
+    <ClCompile Include="..\..\src\netstack\stackdhcp.c" />
+    <ClCompile Include="..\..\src\netstack\stackdns.c" />
+    <ClCompile Include="..\..\src\netstack\stackdnsmulti.c" />
+    <ClCompile Include="..\..\src\netstack\stackdnsnetbios.c" />
+    <ClCompile Include="..\..\src\netstack\stackdnssrv.c" />
+    <ClCompile Include="..\..\src\netstack\stackether.c" />
+    <ClCompile Include="..\..\src\netstack\stackip.c" />
+    <ClCompile Include="..\..\src\netstack\stacktcp.c" />
+    <ClCompile Include="..\..\src\netstack\stackudp.c" />
+    <ClCompile Include="..\..\src\netstack\stackwep.c" />
+    <ClCompile Include="..\..\src\netstack\stackwifi.c" />
+    <ClCompile Include="..\..\src\sqdb\sqdb.c" />
+    <ClCompile Include="..\..\src\squirrel.c" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

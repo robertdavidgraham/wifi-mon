@@ -1,0 +1,18 @@
+<style type="text/css">
+<!--
+body {
+	background-color: yellow;
+}
+h1 {background-color: #333333     
+}
+h2 {background-color: transparent}
+p {background-color: rgb(250,0,255)}
+
+#bssids {
+	width:100%; 
+	border-bottom:1px solid #ccc;
+}
+#bssids th {padding: 4px 6px; width:1%; min-width:1px; white-space: nowrap; font:12px/12px arial;}
+
+// -->
+</style>

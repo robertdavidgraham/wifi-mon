@@ -1,0 +1,130 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\netstack">
+      <UniqueIdentifier>{e0203fe4-e6c1-4460-9852-c5afc7cc31a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\display">
+      <UniqueIdentifier>{444df31a-05e6-4152-a82b-2728e04a479a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sqdb">
+      <UniqueIdentifier>{e4f54d0c-4ff1-43d0-84e3-78055e4d1e47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\module">
+      <UniqueIdentifier>{638587a5-0a4e-4831-b4bb-e2f0c8d28064}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\display\dadapters.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\dbeacon.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\dbssid.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\dbssidlist.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\deventlist.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\deventpkt.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\display.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\dprobes.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\dstation.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\dtopmenu.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\display\dxmit.c">
+      <Filter>Source Files\display</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module\hexval.c">
+      <Filter>Source Files\module</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module\manuf.c">
+      <Filter>Source Files\module</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module\mongoose.c">
+      <Filter>Source Files\module</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module\mystring.c">
+      <Filter>Source Files\module</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module\pcapfile.c">
+      <Filter>Source Files\module</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module\pcaplive.c">
+      <Filter>Source Files\module</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module\pixie.c">
+      <Filter>Source Files\module</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module\sprintf_s.c">
+      <Filter>Source Files\module</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackarp.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackdhcp.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackdns.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackdnsmulti.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackdnsnetbios.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackdnssrv.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackether.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackip.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stacktcp.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackudp.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackwep.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\netstack\stackwifi.c">
+      <Filter>Source Files\netstack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sqdb\sqdb.c">
+      <Filter>Source Files\sqdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\squirrel.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
