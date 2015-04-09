@@ -213,7 +213,7 @@ struct TMP_STATIONS *sqdb_enum_probers(struct SQDB *sqdb, size_t *count);
  * There may be multiple records, because the station may have associated
  * and unassociated with multiple access-points.
  */
-struct TMP_STATIONS *sqdb_find_station(struct SQDB *sqdb, const unsigned char *mac, size_t *count);
+struct TMP_STATIONS *sqdb_find_station(struct SQDB *sqdb, const unsigned char *mac, unsigned *count);
 
 unsigned sqdb_bssid_station_count(struct SQDB *sqdb, const unsigned char *bssid);
 unsigned accesspoint_maxrate(struct SQDB_AccessPoint *entry);

@@ -353,6 +353,7 @@ void squirrel_frame(struct Squirrel *squirrel, struct NetFrame *frame, const uns
 			unsigned version = px[0];
 			unsigned header_length = ex16le(px+2);
 			unsigned features = ex32le(px+4);
+            unsigned flags = px[16];
 			unsigned offset;
             int dbm_noise = 0;
             unsigned lock_quality = 0;
@@ -422,7 +423,10 @@ void squirrel_frame(struct Squirrel *squirrel, struct NetFrame *frame, const uns
 				lock_quality = ((unsigned char*)px)[offset];
 			}
 
-            
+            if (flags & 0x40) {
+                /* FCS/CRC error */
+                return;
+            }
 
 
 			squirrel_wifi_frame(squirrel, frame, px+header_length, length-header_length);
@@ -1561,6 +1565,12 @@ void squirrel_monitor_thread(void *user_data)
 		squirrel_set_interface_status(squirrel, devicename, 1, interface_channel);
 		fprintf(stderr, "%s: monitoring\n", devicename);
 	}
+    
+    if (pcap.can_set_rfmon(hPcap) == 1) {
+        fprintf(stderr, "%s: setting monitor mode\n", devicename);
+        pcap.set_rfmon(hPcap);
+        pcap.set_datalink(hPcap, 127);
+    }
 
 
 
@@ -1660,7 +1670,7 @@ int FERRET_MAIN(int argc, char **argv)
 	struct Squirrel *squirrel;
 
 	fprintf(stderr, "-- SQUIRREL 1.0 - 2008 (c) Errata Security\n");
-	fprintf(stderr, "-- build = %s %s (%u-bits)\n", __DATE__, __TIME__, sizeof(size_t)*8);
+	fprintf(stderr, "-- build = %s %s (%u-bits)\n", __DATE__, __TIME__, (unsigned)sizeof(size_t)*8);
 
 	/*
 	 * Register a signal handler for the <ctrl-c> key. This allows

@@ -119,6 +119,8 @@ unsigned bssid_hash(const unsigned char *px)
 {
 	unsigned result = 0;
 
+    if (px == 0)
+        return 0;
 	result ^= (px[0]<<8) | px[1];
 	result ^= (px[2]<<8) | px[3];
 	result ^= (px[4]<<8) | px[5];
@@ -971,6 +973,9 @@ sqdb_add_info(struct SQDB *sqdb, const unsigned char *mac_address, const unsigne
 	unsigned name_length = strlen(name);
 	unsigned value_length = strlen(value);
 
+    if (bssid == 0)
+        bssid = (const unsigned char*)"\0\0\0\0\0\0";
+    
     /* Filter out some common names that I see */
     if (MATCHESZ(name, "domain")) {
         if (MATCHESZ(value, "savvis.net"))

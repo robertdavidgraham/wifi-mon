@@ -145,6 +145,19 @@ static const char *null_PCAP_LIB_VERSION(void)
 	return "stub/0.0";
 }
 
+static int null_PCAP_CAN_SET_RFMON(void *hPcap)
+{
+    return 0;
+}
+static void null_PCAP_SET_RFMON(void *hPcap)
+{
+    ;
+}
+static int null_PCAP_SET_DATALINK(void *hPcap, int datalink)
+{
+    return -1;
+}
+
 #ifdef WIN32
 static void *null_PCAP_GET_AIRPCAP_HANDLE(void *p)
 {
@@ -270,7 +283,11 @@ void pcaplive_init(struct PCAPLIVE *pl)
 	pl->is_available = 0;
 	pl->is_printing_debug = 1;
 
+#ifdef __APPLE__
+	hLibpcap = dlopen("libpcap.dylib", RTLD_LAZY);
+#else
 	hLibpcap = dlopen("libpcap.so", RTLD_LAZY);
+#endif
 	if (hLibpcap == NULL) {
 		fprintf(stderr, "%s: %s\n", "libpcap.so", dlerror());
 		fprintf(stderr, "Searching elsewhere for libpcap\n");
@@ -327,6 +344,13 @@ void pcaplive_init(struct PCAPLIVE *pl)
 #ifdef WIN32
 	DOLINK(PCAP_GET_AIRPCAP_HANDLE, get_airpcap_handle);
 #endif
+
+
+	DOLINK(PCAP_CAN_SET_RFMON   , can_set_rfmon);
+    DOLINK(PCAP_SET_RFMON       , set_rfmon);
+    DOLINK(PCAP_SET_DATALINK    , set_datalink);
+
+    
 	//DOLINK(PCAP_OPEN_LIVE		, open_live);
 
 	pl->can_transmit = null_CAN_TRANSMIT;

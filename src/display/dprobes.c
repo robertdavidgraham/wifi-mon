@@ -1,4 +1,4 @@
-#include "sqdb/sqdb2.h"
+#include "../sqdb/sqdb2.h"
 #include "pixie.h"
 #include "mongoose.h"
 #include "ctype.h"
@@ -88,7 +88,7 @@ display_probers_list(struct mg_connection *c, const struct mg_request_info *ri, 
 	struct SQDB *sqdb = (struct SQDB*)user_data;
 	unsigned i;
     struct TMP_STATIONS *list;
-    unsigned list_count = 0;
+    size_t list_count = 0;
     char defanged[1024];
 
 	pixie_enter_critical_section(sqdb->cs);
@@ -207,7 +207,7 @@ xml_probers_list(struct mg_connection *c, const struct mg_request_info *ri, void
 	struct SQDB *sqdb = (struct SQDB*)user_data;
 	unsigned i;
     struct TMP_STATIONS *list;
-    unsigned list_count = 0;
+    size_t list_count = 0;
     char defanged[1024];
     char *last_update_string;
     time_t last_update = 0;

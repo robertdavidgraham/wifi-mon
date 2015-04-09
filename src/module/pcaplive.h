@@ -6,6 +6,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <sys/time.h>
 
 #ifdef STATICPCAP
 /* Normal, we "dynamically" link to the libpcap library. However, on
@@ -21,10 +22,14 @@ struct pcap_if {
 };
 typedef struct pcap_if pcap_if_t;
 struct pcap_pkthdr {
+#ifdef __APPLE__
+    struct timeval ts;
+#else
 	struct pcap_timeval {
 		unsigned tv_sec;
 		unsigned tv_usec;
 	} ts;	/* time stamp */
+#endif
 	unsigned caplen;	/* length of portion present */
 	unsigned len;	/* length this packet (off wire) */
 };
@@ -51,7 +56,10 @@ typedef void (*PCAP_FREEALLDEVS)(pcap_if_t *alldevs);
 typedef void * (*PCAP_GET_AIRPCAP_HANDLE)(void *p);
 typedef unsigned (*AIRPCAP_SET_DEVICE_CHANNEL)(void *p, unsigned channel);
 typedef unsigned (*CAN_TRANSMIT)(const char *devicename);
-
+typedef int (*PCAP_CAN_SET_RFMON)(void *hPcap);
+typedef void (*PCAP_SET_RFMON)(void *hPcap);
+typedef int (*PCAP_SET_DATALINK)(void *hPcap, int datalink);
+    
 struct PCAPLIVE
 {
 	unsigned func_err:1;
@@ -76,6 +84,10 @@ struct PCAPLIVE
 	//BOOL AirpcapSetFcsPresence(PAirpcapHandle AdapterHandle, BOOL IsFcsPresent);
 
 	CAN_TRANSMIT		can_transmit;
+    
+    PCAP_CAN_SET_RFMON  can_set_rfmon;
+    PCAP_SET_RFMON      set_rfmon;
+    PCAP_SET_DATALINK   set_datalink;
 };
 
 /**

@@ -66,9 +66,10 @@ display_adapters(struct mg_connection *c, const struct mg_request_info *ri, void
 	pixie_enter_critical_section(squirrel->cs);
 
 	/* If a CGI request was sent to change an adapter status, then do that change */
-	if (action)
+	if (action) {
 		; //change_adapter_status(
-
+    }
+    
 	mg_headers_ok(c, "text/html");
 	X(c, "Connection: close\r\n");
 	X(c, "\r\n");

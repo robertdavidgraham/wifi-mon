@@ -145,8 +145,9 @@ void squirrel_udp(struct Squirrel *squirrel, struct NetFrame *frame, const unsig
 			;//squirrel_netbios_dgm(squirrel, frame, px+offset, length-offset);
 			break;
 		case 1900:
-			if (frame->dst_ipv4 == 0xeffffffa)
+            if (frame->dst_ipv4 == 0xeffffffa) {
 				; //parse_ssdp(squirrel, frame, px+offset, length-offset);
+            }
 			break;
 		case 5369:
 			break;

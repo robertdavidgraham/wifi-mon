@@ -4,7 +4,7 @@
 #include "squirrel.h"
 #include "formats.h"
 #include "netframe.h"
-#include "sqdb/sqdb.h"
+#include "../sqdb/sqdb.h"
 #include "stackwep.h"
 
 //#include "val2string.h"	/* for translating OUIs */
@@ -1604,9 +1604,10 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct NetFrame *frame, const
 		break;
 	case 0x00000c:
 		offset +=3;
-		if (offset < length)
+        if (offset < length) {
 			; //squirrel_cisco00000c(squirrel, frame, px+offset, length-offset);
-		return;
+		}
+        return;
 	case 0x080007:
 		break; /*apple*/
 	case 0x000b85:

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <stddef.h>
 #include "pcapfile.h"
 
 #ifdef WIN32
@@ -243,7 +244,7 @@ int pcapfile_readframe(
 	unsigned sizeof_buf
 	)
 {
-	size_t bytes_read;
+	ptrdiff_t bytes_read;
 	unsigned char header[16];
 	unsigned byte_order = capfile->byte_order;
 	unsigned is_corrupt = 0;
@@ -460,7 +461,7 @@ int pcapfile_readframe(
 struct PcapFile *pcapfile_openread(const char *capfilename)
 {
 	FILE *fp;
-	size_t bytes_read;
+	ptrdiff_t bytes_read;
 	unsigned char buf[24];
 	unsigned byte_order;
 	unsigned linktype;

@@ -88,8 +88,9 @@ void squirrel_ethernet_frame(struct Squirrel *squirrel, struct NetFrame *frame, 
 				break;
 			case 0x00000c:
 				offset +=3;
-				if (offset < length)
+                if (offset < length) {
 					;//squirrel_cisco00000c(squirrel, frame, px+offset, length-offset);
+                }
 				return;
 			case 0x080007:
 				break; /*apple*/
