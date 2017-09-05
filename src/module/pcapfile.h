@@ -17,7 +17,7 @@ typedef unsigned __int64 uint64_t;
 #elif defined(__GNUC__) && __GNUC__ == 4
 #include <stdint.h>
 #else
-#error compiler unknown, fix pcapfile 64-bit definition
+#include <stdint.h>
 #endif
 
 struct PcapFile;

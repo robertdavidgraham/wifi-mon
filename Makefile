@@ -32,7 +32,7 @@ sqdb_sources := $(wildcard $(SRCDIR)/sqdb/*.c)
 
 SRC = $(display_sources) $(module_sources) $(netstack_sources) $(sqdb_sources)
 
-OBJ = $(addprefix $(TMPDIR)/, $(notdir $(addsuffix .o, $(basename $(SRC))))) $(TMPDIR)/squirrel.o
+OBJ = $(addprefix $(TMPDIR)/, $(notdir $(addsuffix .o, $(basename $(SRC))))) $(TMPDIR)/main.o
 
 $(DSTDIR)/wifi-mon: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $(OBJ) -lm $(LIBS) -lstdc++
@@ -43,6 +43,6 @@ depend:
 clean:
 	rm -f $(OBJ)
 
-$(TMPDIR)/squirrel.o: $(SRCDIR)/squirrel.c
+$(TMPDIR)/main.o: $(SRCDIR)/main.c
 	$(CC) $(CFLAGS) -c $< -o $@
 

@@ -208,7 +208,12 @@ struct Manufs xmanufs[] = {
 /**/{0x80501B,  "Nokia     ", "Nokia"},
     {0x9027E4,  "Apple     ", "Apple"},
     {0x904CE5,  "Foxconn   ", "Hon Hai Precision"},
+
     {0x90840D,  "Apple     ", "Apple"},
+    {0x9068c3,  "Motorola  ", "Motorola"}, /* Motorola */
+    {0x9268c3,  "(Android) ", "(Android)"}, /* Motorola */
+    {0x9ce635,  "Nintendo  ", "Nintendo"},
+    {0x9ee635,  "Nintendo  ", "Nintendo"},
 /**/{0xA04E04,  "Nokia     ", "Nokia"},
     {0xA4ED4E,  "MotorolaPH", "Motorola Mobile Devices"},
 /**/{0xA87B39,  "Nokia     ", "Nokia"},
@@ -222,6 +227,7 @@ struct Manufs xmanufs[] = {
     {0xD83062,  "Apple     ", "Apple"},
 /**/{0xD87533,  "Nokia     ", "Nokia"},
     {0xD8A25E,  "Apple     ", "Apple"},
+    {0xDAA119,  "(Android) ", "(Android)"},
     {0xE80688,  "Apple     ", "Apple"},
 /**/{0xE8E5D6,  "Samsung   ", "Samsung"},
 /**/{0xEC9B5B,  "Nokia     ", "Nokia"},
@@ -556,10 +562,17 @@ struct Changes {
 	{"Intel Corpo", "Intel     "},
 	{"Intel Corp",	"Intel     "},
 
+	{"KYOCERA COR", "Kyocera   "},
 	{"LiteonTech",	"Lite-On   "},
 	{"Liteon Tech", "Lite-On   "},
 	{"Logitec Cor", "Logitec   "},
 	
+	{"LG Innotek",  "LG        "},
+	{"LG Innotek ", "LG        "},
+	{"LG Electron", "LG        "},
+	{"Microsoft C", "Microsoft "},
+	{"Microsoft M", "Microsoft "},
+	{"Motorola Mo", "Motorola  "},
 	{"Murata Manu", "Murata    "},
 
 	{"NokiaDanma",	"Nokia     "},
@@ -572,12 +585,16 @@ struct Changes {
 	{"NEC AccessT", "NEC       "},
 	{"NEC Corpora", "NEC       "},
 
+	{"OnePLus Tec",	"OnePlus   "},
 	{"Palm, Inc",	"-hp- Palm "},
 	{"Proxim Wire", "Proxim    "},
 
 	{"Quanta Micr", "Quanta    "},
 	{"QuantaMicr",	"Quanta    "},
-	
+	{"QUANTA COMP", "Quanta    "},
+
+	{"Ruckus Wire", "Ruckus    "},
+
 	{"RimTesting",	"BLACKBERRY"},
 	{"ResearchIn",	"BLACKBERRY"},
 	{"RIM",			"BLACKBERRY"},
@@ -603,6 +620,7 @@ struct Changes {
 	{"hp        ",	"-hp-      "},
 	{"HP        ",	"-hp-      "},
 	{"Hewlett Pac", "-hp-      "},
+	{"zte corpora", "ZTE       "},
 	{0,0}
 };
 
@@ -651,6 +669,8 @@ manuf_from_mac(const unsigned char *mac_address)
         }
     }
 
+    if ((mac_address[0] & 0x03) == 0x02)
+        return "(random)";
     return "";
 }
 
