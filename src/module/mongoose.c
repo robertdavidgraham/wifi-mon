@@ -1010,7 +1010,8 @@ static uint64_t
 push(int fd, SOCKET sock, SSL *ssl, const char *buf, uint64_t len)
 {
 	uint64_t	sent;
-	int		n, k;
+    ssize_t	n;
+    int k;
 
 	sent = 0;
 	while (sent < len) {

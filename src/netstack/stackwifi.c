@@ -1279,7 +1279,7 @@ void squirrel_wifi_beacon(struct Squirrel *squirrel, struct NetFrame *frame, con
 	unsigned direction;
 	const unsigned char *bssid;
 	const unsigned char *mac_address;
-    unsigned is_adhoc;
+    unsigned is_adhoc = 0;
 
 	memset(&wifimgmt, 0, sizeof(wifimgmt));
 

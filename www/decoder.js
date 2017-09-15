@@ -1,9 +1,12 @@
 
+/**
+ * Because strings need a function that'll trim whitespace
+ */
 String.prototype.trim = function () {
     return this.replace(/^\s*/, "").replace(/\s*$/, "");
 }
 
-function color_hex_range(px, node)
+function color_hex_field(px, node)
 {
 	var hexstart = node.getAttribute("hexstart");
 	if (hexstart == undefined)
@@ -43,7 +46,7 @@ function do_shade_hex(node)
 			fieldvalue.value = value;
 		}
 	}
-	color_hex_range(pxhex,node);
+	color_hex_field(pxhex,node);
 }
 
 var pxhex;
@@ -393,15 +396,59 @@ function SELECT(num, array)
 		return array[num];
 }
 
-function range(start,stop)
+function Range(start,stop,px)
 {
-	var result = {start:0, stop:0};
-	result.start = start;
-	result.stop = stop;
-	return result;
+    this.start = start;
+    this.stop = stop;
+    this.px = px;
+    this.len = function() { return this.stop - this.start; }
+    this.byteAt = function(offset) { return this.px[this.start + offset]; }
+    this.sub = function(offset,length) {
+        var result = new Range(this.start, this.stop, this.px);
+        if (offset)
+            result.start += offset;
+        if (length)
+            result.stop = result.start + length;
+        return result;
+    }
+    this.slice = function(begin,end) { if (!begin) return this.px.slice(this.start, this.stop);}
+    this.toDisplayString = function() {return display_string(this.slice());}
+    this.DECIMAL_LE = function(node, text) {
+        if (this.start > this.start)
+            return 0;
+        if (!this.px) {
+            DECODEITEM(node, text + ": (err}");
+            return 0;
+        }
+        var value = 0;
+        for (var i=0; i<(this.stop-this.start); i++) {
+            var val = 0 + this.px[this.start + i];
+            value = value + (val << (i * 8));
+        }
+
+        DECODEITEM(node, text + ": " + value, this);
+        return value;
+    }
+	return this;
 }
+                                                             
+function decode_atheros_advanced_capability(node, field)
+{
+    if (field.len() < 1)
+        return;
+    
+    
+    var subtype = field.sub(0,1).DECIMAL_LE(node, "Subtype");
+    if (subtype != 1)
+		return;
+
+	field.sub(1,1).DECIMAL_LE(node, "Version");
+	
+}
+
 function decode_wifi_framecontrol(node, px)
 {
+	var field = new Range(0, px.length, px);
 	var types = new Array("Management frame", "Control frame", "Data frame", "Data frame");
 	var dsstatuss = new Array(
 		"Not leaving DS or network is operating in AD-HOC mode (To DS: 0 From DS: 0) (0x00)",
@@ -409,7 +456,7 @@ function decode_wifi_framecontrol(node, px)
 		"unknown",
 		"unknown"
 		);
-	framecontrol = DECODETREE(node, "Frame control: " + NUMHEX16LE(px,0), range(0,2));
+	framecontrol = DECODETREE(node, "Frame control: " + NUMHEX16LE(px,0), field.sub(0,2));
 	toggle(framecontrol.parentNode);
 	
 	version = px[0]&3;
@@ -418,10 +465,10 @@ function decode_wifi_framecontrol(node, px)
 	flags = px[1];
 	ds = flags&3;
 
-	DECODEITEM(framecontrol, "Version: " + version, range(0,1));
-	DECODEITEM(framecontrol, "Type: " + types[type] + "(" + type + ")", range(0,1));
-	DECODEITEM(framecontrol, "Subtype: " + subtype, range(0,1));
-	f = DECODETREE(framecontrol, "Flags: " + NUMHEX8(px,1), range(1,2));
+	DECODEITEM(framecontrol, "Version: " + version, field.sub(0,1));
+	DECODEITEM(framecontrol, "Type: " + types[type] + "(" + type + ")", field.sub(0,1));
+	DECODEITEM(framecontrol, "Subtype: " + subtype, field.sub(0,1));
+	f = DECODETREE(framecontrol, "Flags: " + NUMHEX8(px,1), field.sub(1,2));
 	toggle(f.parentNode);
 	DECODEITEM(f, "DS status: " + dsstatuss[ds]);
 	DECODEFLAG1(f, flags, 0x04, "More fragments", "This is the last fragment", "More fragments follow");
@@ -456,6 +503,10 @@ function display_string(px)
 	return result;
 }
 
+function ex8(px,offset)
+{
+    return px[offset];
+}
 function ex16le(px,offset)
 {
 	return px[offset] | px[offset+1]<<8;
@@ -538,11 +589,12 @@ function parse_rates(px)
 	return result;
 }
 
+
 /**
  * Decode the Microsoft information element, which contains many
  * differnet sub-elements, such as WPA1 and Multi-media extensions
  */
-function decode_microsoft_ie(node, px, xrange)
+function decode_microsoft_ie(node, px, field)
 {
 	if (px.length < 1) {
 		DECODEITEM(node, "Too short");
@@ -552,12 +604,12 @@ function decode_microsoft_ie(node, px, xrange)
 	var offset = 1;
 	switch (microsoft_type) {
 	case 1:
-		f = DECODETREE(node, "Vendor Specific: WPA " + quick_rsn_information(px.slice(1,px.length)), xrange);
+		f = DECODETREE(node, "Vendor Specific: WPA " + quick_rsn_information(px.slice(1,px.length)), field);
 		toggle(f.parentNode);
 		if (offset+2 < px.length) {
 			version = ex16le(px,offset);
 			offset += 2;
-			DECODEITEM(f, "Tag Interpretation: " + "WPA IE, type 1, version " + version, xrange);
+			DECODEITEM(f, "Tag Interpretation: " + "WPA IE, type 1, version " + version, field);
 			if (version != 1) {
 				return;
 			}
@@ -566,7 +618,7 @@ function decode_microsoft_ie(node, px, xrange)
 		
 		break;
 	case 2:
-		DECODEITEM(node, "Windows Multimedia Extensions, version = " + px[1], xrange);
+		DECODEITEM(node, "Windows Multimedia Extensions, version = " + px[1], field);
 		break;
 	default:
 		var str = "";
@@ -588,7 +640,7 @@ function decode_microsoft_ie(node, px, xrange)
 
 /**
  */
-function decode_aironet_ie(node, px, xrange)
+function decode_aironet_ie(node, px, field)
 {
 	if (px.length < 1) {
 		DECODEITEM(node, "Too short");
@@ -598,11 +650,11 @@ function decode_aironet_ie(node, px, xrange)
 	var offset = 1;
 	switch (microsoft_type) {
 	case 3:
-		DECODEITEM(node, "Aironet CCX version =  " + px[1], xrange);
+		DECODEITEM(node, "Aironet CCX version =  " + px[1], field);
 		break;
 	default:
 		var str = "";
-		f = DECODETREE(node, "Vendor Specific: Aironet Tag " + microsoft_type + " Len " + px.length, xrange);
+		f = DECODETREE(node, "Vendor Specific: Aironet Tag " + microsoft_type + " Len " + px.length, field);
 		toggle(f.parentNode);
 		DECODEITEM(f, "Tag Number: " + 221 + "(Vendor Specific)");
 		DECODEITEM(f, "Tag length: " + px.length);
@@ -670,23 +722,25 @@ function decode_wpa_items(node, px, offset)
 	}
 	return offset;
 }
-function decode_tagged_parm(node, tag, px, zoffset)
+
+function decode_tagged_parm(node, tag, field)
 {
-	var xrange = range(zoffset-2,zoffset+px.length);
+    var px = field.slice();
+    
 	switch (tag) {
 	case 0: /* SSID */
-		d = display_string(px);
-		DECODEITEM(node, 'SSID parameter set: "' + d + '"', xrange);
+        var d = field.toDisplayString();
+		DECODEITEM(node, 'SSID parameter set: "' + d + '"', field);
 		break;
 	case 1: /* Supported Rates */
-		d = parse_rates(px);
-		DECODEITEM(node, "Supported rates: " + d + "[Mbps]", xrange);
+		d = parse_rates(field.slice());
+		DECODEITEM(node, "Supported rates: " + d + "[Mbps]", field);
 		break;
 	case 3:
-		if (px.length == 1) {
-			DECODEITEM(node, "DS Parameter set: Current Channel: " + px[0], xrange);
+		if (field.len() == 1) {
+            DECODEITEM(node, "DS Parameter set: Current Channel: " + field.byteAt(0), field.sub(0,1));
 		} else {
-			f = DECODETREE(node, "DS Parameter set: Length: " + px.length, xrange);
+			f = DECODETREE(node, "DS Parameter set: Length: " + field.len(), field);
 			toggle(f.parentNode);
 		}
 		break;
@@ -694,25 +748,73 @@ function decode_tagged_parm(node, tag, px, zoffset)
 		break;
 	case 6: /* ATIM Window for IBSS (ad-hoc) */
 		if (px.length < 2) {
-			DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 2", xrange);
+			DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 2", field);
 		} else {
 			var val = ex16le(px,0);
-			DECODEITEM(node, "IBSS Parameter set: ATIM window " + val, xrange);
+			DECODEITEM(node, "IBSS Parameter set: ATIM window " + val, field);
 		}
 		break;
+            
+        case 7: /* Country Info */
+            if (px.length < 2) {
+                DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 2", field);
+            } else {
+                d = display_string(px.slice(0,2));
+                DECODEITEM(node, "Country Info: " + d, field);
+            }
+            break;
+        break;
+            
+        case 32: /* Power Constraint */
+            if (px.length < 1) {
+                DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 1", field);
+            } else {
+                d = ex8(px,0);
+                DECODEITEM(node, "Power Constraint: " + d, field);
+            }
+            break;
+            
+        case 45: /* HT Capabilities (802.11n D1.10) */
+            f = DECODETREE(node, "HT Capabilities (802.11n D1.10)", field);
+            toggle(f.parentNode);
+            if (px.length >= 2) {
+                var f2;
+                var flags = ex16le(px,0);
+                f2 = DECODETREE(f, "HT Capabilities: " + NUMHEX16LE(px,0), field.sub(0,2));
+                toggle(f2.parentNode);
+                DECODEFLAG1(f2, flags, 0x0001, "LDPC Coding Capability", "Not Supported", "Supported");
+                DECODEFLAG1(f2, flags, 0x0002, "Channel Width", "20mhz", "40mhz");
+            }
+            if (px.length >= 3) {
+                f2 = DECODETREE(f, "A-MPDU Parameters: " + NUMHEX8(px,2), field.sub(2,3));
+            }
+            if (px.length >= 3 + 16) {
+                f2 = DECODETREE(f, "Rx Modulation/Ecoding Scheme " , field.sub(3,3+16));
+            }
+            if (px.length >= 19 + 2) {
+                f2 = DECODETREE(f, "Extended Capabilities: " + NUMHEX16LE(px,19), field.sub(19,19+2));
+            }
+            if (px.length >= 21 + 4) {
+                f2 = DECODETREE(f, "Transmit Beam Forming (TxBF): " + NUMHEX32LE(px,21), field.sub(21,21 + 4));
+            }
+            if (px.length >= 25 + 1) {
+                f2 = DECODETREE(f, "Antenna Selectection (ASEL): " + NUMHEX8(px,25), field.sub(25,25 + 1));
+            }
+            break;
+            
 	case 42:
 	case 47:
 		if (px.length < 1) {
-			DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 1", xrange);
+			DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 1", field);
 		} else {
-			DECODEITEM(node, "ERP Information: " + NUMHEX8(px,0), xrange);			
+			DECODEITEM(node, "ERP Information: " + NUMHEX8(px,0), field);			
 		}
 		break;
 	case 48: /* WPA2 RSN Information */
 		if (px.length < 2) {
-			DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 2", xrange);
+			DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 2", field);
 		} else {
-			f = DECODETREE(node, "RSN Information: WPA2 " + quick_rsn_information(px), xrange);
+			f = DECODETREE(node, "RSN Information: WPA2 " + quick_rsn_information(px), field);
 			toggle(f.parentNode);
 			DECODEITEM(f, "Tag Number: " + tag);
 			DECODEITEM(f, "Tag length: " + px.length);
@@ -727,8 +829,102 @@ function decode_tagged_parm(node, tag, px, zoffset)
 		break;
 	case 50: /* Extended Supported Rates */
 		d = parse_rates(px);
-		DECODEITEM(node, "Extended Supported Rates: " + d + "[Mbps]", xrange);
+		DECODEITEM(node, "Extended Supported Rates: " + d + "[Mbps]", field);
 		break;
+            
+        case 61:
+            f = DECODETREE(node, "HT Information (802.11n D1.10)", field);
+            toggle(f.parentNode);
+            break;
+            
+        case 74:
+            f = DECODETREE(node, "Overlapping BSS Scan Parameters", field);
+            toggle(f.parentNode);
+            if (px.length >= 14) {
+                DECODEITEM(f, "Scan Passive Dwell: "+ex16le(px,0), field.sub(0, 2));
+                DECODEITEM(f, "Scan Active Dwell: "+ex16le(px,2), field.sub(2, 4));
+                DECODEITEM(f, "Channel Width Trigger Scan Interval: "+ex16le(px,4), field.sub(4, 6));
+                DECODEITEM(f, "Scan Passive Total Per Channel: "+ex16le(px,6), field.sub(6, 8));
+                DECODEITEM(f, "Scan Active Total Per Channel: "+ex16le(px,8), field.sub(8, 10));
+                DECODEITEM(f, "Width Channel Transition Delay Factor: "+ex16le(px,10), field.sub(10, 12));
+                DECODEITEM(f, "Scan Activity Threshold: "+ex16le(px,12), field.sub(12, 14));
+            }
+            break;
+        case 127: /* EXTENDED CAPABILITIES */
+            f = DECODETREE(node, "Extended Capabilities", field);
+            toggle(f.parentNode);
+            if (px.length >= 8) {
+                f2 = DECODETREE(f, "Octet 1: "+NUMHEX8(px,0), field.sub(0, 1));
+                DECODEFLAG1(f2, px[0], 0x01, "20/40 BSS Coexistance", "no", "yes");
+                DECODEFLAG1(f2, px[0], 0x02, "On-demand beacon", "no", "yes");
+                DECODEFLAG1(f2, px[0], 0x04, "Extended Channel Switching", "no", "yes");
+                DECODEFLAG1(f2, px[0], 0x08, "WAVE indication", "no", "yes");
+                DECODEFLAG1(f2, px[0], 0x10, "PSMP", "no", "yes");
+                DECODEFLAG1(f2, px[0], 0x20, "(Reserved)", "no", "yes");
+                DECODEFLAG1(f2, px[0], 0x40, "S-PSMP Support", "no", "yes");
+                DECODEFLAG1(f2, px[0], 0x80, "Event", "no", "yes");
+
+                f2 = DECODETREE(f, "Octet 2: "+NUMHEX8(px,1), field.sub(1, 2));
+                DECODEFLAG1(f2, px[1], 0x01, "Diagnostics", "no", "yes");
+                DECODEFLAG1(f2, px[1], 0x02, "Multicast", "no", "yes");
+                DECODEFLAG1(f2, px[1], 0x04, "Location Tracking", "no", "yes");
+                DECODEFLAG1(f2, px[1], 0x08, "FMS", "no", "yes");
+                DECODEFLAG1(f2, px[1], 0x10, "Proxy ARP", "no", "yes");
+                DECODEFLAG1(f2, px[1], 0x20, "Collocated Interference Reporting", "no", "yes");
+                DECODEFLAG1(f2, px[1], 0x40, "Civic Location", "no", "yes");
+                DECODEFLAG1(f2, px[1], 0x80, "Geospatial Location", "no", "yes");
+                
+                f2 = DECODETREE(f, "Octet 3: "+NUMHEX8(px,2), field.sub(2, 3));
+                DECODEFLAG1(f2, px[2], 0x01, "TFS", "no", "yes");
+                DECODEFLAG1(f2, px[2], 0x02, "WNM-Sleep Mode", "no", "yes");
+                DECODEFLAG1(f2, px[2], 0x04, "TIM Broadcast", "no", "yes");
+                DECODEFLAG1(f2, px[2], 0x08, "BSS Transition", "no", "yes");
+                DECODEFLAG1(f2, px[2], 0x10, "QoS Traffic Capability", "no", "yes");
+                DECODEFLAG1(f2, px[2], 0x20, "AC Station Count", "no", "yes");
+                DECODEFLAG1(f2, px[2], 0x40, "Multiple BSSID", "no", "yes");
+                DECODEFLAG1(f2, px[2], 0x80, "Timing Measurement", "no", "yes");
+
+                f2 = DECODETREE(f, "Octet 4: "+NUMHEX8(px,3), field.sub(3, 4));
+                DECODEFLAG1(f2, px[3], 0x01, "Channel Usage", "no", "yes");
+                DECODEFLAG1(f2, px[3], 0x02, "SSID List", "no", "yes");
+                DECODEFLAG1(f2, px[3], 0x04, "DMS", "no", "yes");
+                DECODEFLAG1(f2, px[3], 0x08, "UTC TSF Offset", "no", "yes");
+                DECODEFLAG1(f2, px[3], 0x10, "Peer U-APSD Buffer STA Support", "no", "yes");
+                DECODEFLAG1(f2, px[3], 0x20, "TDLS Peer PSM Support", "no", "yes");
+                DECODEFLAG1(f2, px[3], 0x40, "TDLS Channel Switching", "no", "yes");
+                DECODEFLAG1(f2, px[3], 0x80, "interworking", "no", "yes");
+
+                f2 = DECODETREE(f, "Octet 5: "+NUMHEX8(px,4), field.sub(4, 5));
+                DECODEFLAG1(f2, px[4], 0x01, "QoS Map", "no", "yes");
+                DECODEFLAG1(f2, px[4], 0x02, "EBR", "no", "yes");
+                DECODEFLAG1(f2, px[4], 0x04, "SSPN Interface", "no", "yes");
+                DECODEFLAG1(f2, px[4], 0x08, "(Reserved)", "no", "yes");
+                DECODEFLAG1(f2, px[4], 0x10, "MSGCF Capability", "no", "yes");
+                DECODEFLAG1(f2, px[4], 0x20, "TDLS Support", "no", "yes");
+                DECODEFLAG1(f2, px[4], 0x40, "TDLS Prohibited", "no", "yes");
+                DECODEFLAG1(f2, px[4], 0x80, "TDLS Channel Switching", "no", "yes");
+
+                f2 = DECODETREE(f, "Octet 6: "+NUMHEX8(px,5), field.sub(5, 6));
+                DECODEFLAG1(f2, px[5], 0x01, "Reject Unadmitted Frame", "no", "yes");
+                DECODEFLAG1(f2, px[5], 0x0E, "Service Interval Granularity", "5ms", "10ms", "15ms", "20ms");
+                DECODEFLAG1(f2, px[5], 0x10, "Identifier Location", "no", "yes");
+                DECODEFLAG1(f2, px[5], 0x20, "U-APSD Coexistence", "no", "yes");
+                DECODEFLAG1(f2, px[5], 0x40, "WNM-Notification", "no", "yes");
+                DECODEFLAG1(f2, px[5], 0x80, "QAB Capability", "no", "yes");
+
+                f2 = DECODETREE(f, "Octet 7: "+NUMHEX8(px,6), field.sub(6, 7));
+                DECODEFLAG1(f2, px[6], 0x01, "UTF-8 SSID", "no", "yes");
+                DECODEFLAG1(f2, px[6], 0xFE, "(Reserved)", 0);
+
+                f2 = DECODETREE(f, "Octet 8: "+NUMHEX8(px,7), field.sub(7, 8));
+                DECODEFLAG1(f2, px[7], 0x1F, "(Reserved)", 0);
+                DECODEFLAG1(f2, px[7], 0x20, "TDLS Wider Bandwidth", "no", "yes");
+                DECODEFLAG1(f2, px[7], 0x40, "Operating Mode Notfication", "no", "yes");
+                DECODEFLAG1(f2, px[7], 0x80, "Max Number of MSDUs in A-MSDU", "0", "1");
+
+            }
+            break;
+
 	case 0x85:
 		var cisco_name = "";
 		if (px.length > 26) {
@@ -737,58 +933,72 @@ function decode_tagged_parm(node, tag, px, zoffset)
 				cisco_name = cisco_name.slice(0,cisco_name.length-1);
 			cisco_name = display_string(cisco_name);
 		}
-		DECODEITEM(node, "Cisco name: " + cisco_name, xrange);
+		DECODEITEM(node, "Cisco name: " + cisco_name, field);
 		break;
 	case 221:
 		if (px.length < 3) {
-			DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 3", xrange);
+			DECODEITEM(node, "Tag length "+px.length+" too short, must be >= 3", field);
 		} else {
 			oui = ex24be(px,0);
 			switch (oui) {
 			case 0x001018:
-				DECODEITEM(node, "Vendor Specific: " + "Broadcom", xrange);
+				DECODEITEM(node, "Vendor Specific: " + "Broadcom", field);
 				break;
 			case 0x0050f2:
-				decode_microsoft_ie(node, px.slice(3,px.length), xrange);
+				decode_microsoft_ie(node, px.slice(3,px.length), field);
 				break;
 			case 0x004096:
-				decode_aironet_ie(node, px.slice(3,px.length), xrange);
+				decode_aironet_ie(node, px.slice(3,px.length), field);
 				break;
+            case 0x0037f:
+                    if (px.length < 4) {
+                        DECODEITEM(node, "Vendor Specific: " + "Atheros", field);
+                    } else switch (px[3]) {
+                        case 1:
+                            f = DECODETREE(node, "Vendor Specific: " + "Atheros - Advanced Capability", field);
+                            toggle(f.parentNode);
+                            decode_atheros_advanced_capability(f, field.sub(4));
+                            break;
+                        default:
+                            DECODEITEM(node, "Vendor Specific: " + "Atheros", field);
+                            break;
+                    }
+                break;
 			default:
-				DECODEITEM(node, "Vendor Specific: " + NUMHEX24LE(px,0), xrange);			
+				DECODEITEM(node, "Vendor Specific: " + NUMHEX24BE(px,0), field);
 			}
 		}
 		break;
 
 	default:
 		var str = "";
-		f = DECODETREE(node, "Reserved tag number: Tag " + tag + " Len " + px.length, xrange);
+		f = DECODETREE(node, "Reserved tag number: Tag " + tag + " Len " + px.length, field);
 		toggle(f.parentNode);
-		DECODEITEM(f, "Tag Number: " + tag, range(zoffset-2,zoffset-1));
-		DECODEITEM(f, "Tag length: " + px.length, range(zoffset-1,zoffset));
+		DECODEITEM(f, "Tag Number: " + tag, field.sub(-2,1), px);
+		DECODEITEM(f, "Tag length: " + px.length, field.sub(-1,1), px);
 		for (i=0; i<10 && i<px.length; i++) {
 			c = px[i];
 			str = str + val_to_hex((c>>4)&0xF) + val_to_hex(c&0xf);
 		}
 		if (px.length > 10)
 			str = str + "...";
-		DECODEITEM(f, "Tag interpretation: " + str, range(zoffset,zoffset+px.length));
+		DECODEITEM(f, "Tag interpretation: " + str, field.sub(2),px);
 	}
 }
 
-function decode_tagged_parms(node, px, zoffset)
+function decode_tagged_parms(node, field)
 {
-	var t = DECODETREE(node, "Tagged parameters (" + px.length + " bytes)", range(zoffset,zoffset+px.length));
+	var t = DECODETREE(node, "Tagged parameters (" + field.len() + " bytes)", field);
 	
 	var i = 0;
-	while (i < px.length) {
-		tag = px[i++];
-		if (i >= px.length)
+	while (i < field.len()) {
+		tag = field.byteAt(i++);
+		if (i >= field.len())
 			break;
-		len = px[i++];
-		if (len > px.length-i)
-			len = px.length-i;
-		decode_tagged_parm(t, tag, px.slice(i, i+len), zoffset+i);
+		len = field.byteAt(i++);
+		if (len > field.len()-i)
+			len = field.len()-i;
+		decode_tagged_parm(t, tag, field.sub(i, len));
 		i += len;
 	}
 }
@@ -817,26 +1027,28 @@ function decode_capability(node, px, offset, r)
 }
 function decode_wifi_beacon(node, px)
 {
-	if (px.length < 24)
+    var field = new Range(0, px.length, px);
+	if (field.len() < 24)
 		return node;
-
+	
 	header_length = 24;
 	header = decode_mgmnt_header(node, px);
 
-	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", range(24,px.length));
-	if (px.length >= 36) {
+	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", field.sub(24));
+	
+	if (field.len() >= 36) {
 		var interval = ((px[32] + px[33]*256.0) * 1024.0) / 1000000.0;
 		var flags = px[34] + px[35]*256;
-		fixed = DECODETREE(parms, "Fixed parameters (12 bytes)", range(24,36));
+		fixed = DECODETREE(parms, "Fixed parameters (12 bytes)", field.sub(24,12));
 		toggle(fixed.parentNode);
-		DECODEITEM(fixed, "Timestamp: " + NUMHEX64LE(px,24), range(24,32));
-		DECODEITEM(fixed, "Beacon Interval: " + interval + " [Seconds]", range(32,34));
+		DECODEITEM(fixed, "Timestamp: " + NUMHEX64LE(px,24), field.sub(24,8));
+		DECODEITEM(fixed, "Beacon Interval: " + interval + " [Seconds]", field.sub(32,2));
 
-		decode_capability(fixed, px, 34, range(34,36));
+		decode_capability(fixed, px, 34, field.sub(34,2));
 	}
 
-	if (px.length > 36) {
-		decode_tagged_parms(parms, px.slice(36,px.length), 36);
+	if (field.len() > 36) {
+		decode_tagged_parms(parms, field.sub(36));
 	}
 
 	return header;
@@ -844,6 +1056,7 @@ function decode_wifi_beacon(node, px)
 
 function decode_wifi_associate_request(node, px)
 {
+	var field = new Range(0, px.length, px);
 	if (px.length < 24)
 		return node;
 
@@ -851,18 +1064,18 @@ function decode_wifi_associate_request(node, px)
 
 	header = decode_mgmnt_header(node, px);
 
-	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", range(24,px.length));
+	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", field.sub(24,px.length-24));
 	if (px.length >= 28) {
 		var interval = ((px[26] + px[27]*256.0) * 1024.0) / 1000000.0;
 
-		fixed = DECODETREE(parms, "Fixed parameters (4 bytes)", range(24,28));
+		fixed = DECODETREE(parms, "Fixed parameters (4 bytes)", field.sub(24,4));
 		toggle(fixed.parentNode);
-		decode_capability(fixed, px, 24, range(24,26));
-		DECODEITEM(fixed, "Listen Interval: " + interval + " [Seconds]", range(26,28));
+		decode_capability(fixed, px, 24, field.sub(24,2));
+		DECODEITEM(fixed, "Listen Interval: " + interval + " [Seconds]", field.sub(26,2));
 	}
 
-	if (px.length > 28) {
-		decode_tagged_parms(parms, px.slice(28,px.length), 28);
+	if (field.len() >= 28) {
+		decode_tagged_parms(parms, field.sub(28));
 	}
 
 	return header;
@@ -870,27 +1083,28 @@ function decode_wifi_associate_request(node, px)
 
 function decode_wifi_associate_response(node, px)
 {
-	if (px.length < 24)
+	var field = new Range(0, px.length, px);
+	if (field.len() < 24)
 		return node;
 
 	header_length = 24;
 
 	header = decode_mgmnt_header(node, px);
 
-	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", range(24,px.length));
+	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", field.sub(24,px.length-24));
 	if (px.length >= 30) {
 		var status_code = px[26] + px[27]*256;
 		var association_id = px[28] + px[29]*256;
 
-		fixed = DECODETREE(parms, "Fixed parameters (6 bytes)", range(24,30));
+		fixed = DECODETREE(parms, "Fixed parameters (6 bytes)", field.sub(24,4));
 		toggle(fixed.parentNode);
-		decode_capability(fixed, px, 24, range(24,26));
-		DECODEITEM(fixed, "Status Code: " + ENUM(status_code,{0:"Successful "}) + PARENSHEX16(status_code), range(26,28));
-		DECODEITEM(fixed, "Association ID: " + hex16(association_id), range(28,30));
+		decode_capability(fixed, px, 24, field.sub(24,2));
+		DECODEITEM(fixed, "Status Code: " + ENUM(status_code,{0:"Successful "}) + PARENSHEX16(status_code), field(26,28,px));
+		DECODEITEM(fixed, "Association ID: " + hex16(association_id), field.sub(28,2));
 	}
 
-	if (px.length > 30) {
-		decode_tagged_parms(parms, px.slice(30,px.length), 30);
+	if (field.len() > 30) {
+		decode_tagged_parms(parms, field.sub(30));
 	}
 
 	return header;
@@ -898,22 +1112,23 @@ function decode_wifi_associate_response(node, px)
 
 function decode_wifi_deauth(node, px)
 {
-	if (px.length < 24)
+	var field = new Range(0, px.length, px);
+	if (field.len() < 24)
 		return node;
 
 	header_length = 24;
 
 	header = decode_mgmnt_header(node, px);
 
-	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", range(24,26));
+	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", field.sub(24,2));
 	if (px.length >= 26) {
 		var reason = px[24] + px[25]*256;
 		var enumreason = {
 			"2": "Previous authentication no longer valid "
 		};
-		fixed = DECODETREE(parms, "Fixed parameters (2 bytes)", range(24,26));
+		fixed = DECODETREE(parms, "Fixed parameters (2 bytes)", field.sub(24,2));
 		toggle(fixed.parentNode);
-		DECODEITEM(fixed, "Reason code: " + ENUM(reason,enumreason) + PARENSHEX16(reason), range(24,26));
+		DECODEITEM(fixed, "Reason code: " + ENUM(reason,enumreason) + PARENSHEX16(reason), field.sub(24,2));
 		
 	}
 
@@ -922,6 +1137,7 @@ function decode_wifi_deauth(node, px)
 
 function decode_mgmnt_header(node, px)
 {
+	var field = new Range(0, px.length, px);
 	var type = {
 		0x00: "Association Request ",
 		0x00: "Reassociation Request ",
@@ -937,22 +1153,23 @@ function decode_mgmnt_header(node, px)
 
 	flags2 = px[22] + px[23]*256;
 
-	header = DECODETREE(node, "IEEE 802.11 "+ENUM(px[0],type), range(0,px.length));
-	DECODEITEM(header, "Type/Subtype: "+ENUM(px[0],type) + PARENSHEX8(px[0]>>4), range(0,1));
+	header = DECODETREE(node, "IEEE 802.11 "+ENUM(px[0],type), field);
+	DECODEITEM(header, "Type/Subtype: "+ENUM(px[0],type) + PARENSHEX8(px[0]>>4), field.sub(0,1));
 	decode_wifi_framecontrol(header, px);
 	duration = ex16le(px,2);
-	DECODEITEM(header, "Duration: " + duration, range(2,4));
+	DECODEITEM(header, "Duration: " + duration, field.sub(2,2));
 	DECODEMACADDR(header, "Destination address", px, 4);
 	DECODEMACADDR(header, "Source address", px, 10);
 	DECODEMACADDR(header, "BSS Id", px, 16);
-	DECODEITEM(header, "Fragment number: " + (flags2&0xF), range(22,23));
-	DECODEITEM(header, "Sequence number: " + (flags2>>4), range(22,24));
+	DECODEITEM(header, "Fragment number: " + (flags2&0xF), field.sub(22,1));
+	DECODEITEM(header, "Sequence number: " + (flags2>>4), field.sub(22,2));
 
 	return header;
 }
 
 function decode_wifi_auth(node, px)
 {
+	var field = Range(0, px.lelngth, px);
 	if (px.length < 24)
 		return node;
 
@@ -960,7 +1177,7 @@ function decode_wifi_auth(node, px)
 
 	header = decode_mgmnt_header(node, px);
 
-	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", range(24,28));
+	parms = DECODETREE(node, "IEEE 802.11 wireless LAN management frame", field.sub(24,4));
 	if (px.length >= 28) {
 		var algo = px[24] + px[25]*256;
 		var seq = px[26] + px[27]*256;
@@ -968,10 +1185,10 @@ function decode_wifi_auth(node, px)
 			"0": "Open System "
 		};
 
-		fixed = DECODETREE(parms, "Fixed parameters (4 bytes)", range(24,26));
+		fixed = DECODETREE(parms, "Fixed parameters (4 bytes)", field.sub(24,2));
 		toggle(fixed.parentNode);
-		DECODEITEM(fixed, "Authentication Algorithm: "+ENUM(algo,enumalgo) + PARENSHEX16(algo), range(24,26));
-		DECODEITEM(fixed, "Authentication SEQ: 0x"+ hex16(seq), range(26,28));
+		DECODEITEM(fixed, "Authentication Algorithm: "+ENUM(algo,enumalgo) + PARENSHEX16(algo), field.sub(24,2));
+		DECODEITEM(fixed, "Authentication SEQ: 0x"+ hex16(seq), field.sub(26,4));
 	}
 
 	return header;
@@ -1050,12 +1267,30 @@ function NUMHEX64LE(bytes,offset)
 }
 function NUMHEX24LE(bytes,offset)
 {
-	var result = "0x";
-	for (i=0; i<3; i++) {
-		val = bytes[offset+2-i];
-		result = result + val_to_hex((val>>4)&0xF) + val_to_hex((val>>0)&0xF);
-	}
-	return result;
+    var result = "0x";
+    for (i=0; i<3; i++) {
+        val = bytes[offset+2-i];
+        result = result + val_to_hex((val>>4)&0xF) + val_to_hex((val>>0)&0xF);
+    }
+    return result;
+}
+function NUMHEX24BE(bytes,offset)
+{
+    var result = "0x";
+    for (i=0; i<3; i++) {
+        val = bytes[offset+i];
+        result = result + val_to_hex((val>>4)&0xF) + val_to_hex((val>>0)&0xF);
+    }
+    return result;
+}
+function NUMHEX32LE(bytes,offset)
+{
+    var result = "0x";
+    for (i=0; i<4; i++) {
+        val = bytes[offset+3-i];
+        result = result + val_to_hex((val>>4)&0xF) + val_to_hex((val>>0)&0xF);
+    }
+    return result;
 }
 
 function hex8(val)
@@ -1151,9 +1386,9 @@ function DECODEFLAG1_16(node, flags, mask, r, name, e)
 
 /**
  * Add a line to the protocol decode with the specified text contents
- * and associated range in the hex field.
+ * and associated field in the hex field.
  */
-function DECODEITEM(node,text,range)
+function DECODEITEM(node,text,field)
 {
 	item = document.createElement("li");
 	item.className = "treenorm";
@@ -1184,9 +1419,9 @@ function DECODEITEM(node,text,range)
 
 	div.innerHTML = text;
 
-	if (range != undefined) {
-		item.setAttribute("hexstart", range.start);
-		item.setAttribute("hexstop", range.stop);
+	if (field != undefined) {
+		item.setAttribute("hexstart", field.start);
+		item.setAttribute("hexstop", field.stop);
 	}
 	return item;
 }
@@ -1202,7 +1437,7 @@ function g(t,e)
 		return false;
 }
 
-function DECODETREE(node, text, range)
+function DECODETREE(node, text, field)
 {
 	item = document.createElement("li");
 	item.className = "treeshow";
@@ -1220,9 +1455,9 @@ function DECODETREE(node, text, range)
 	ul = document.createElement("ul");
 	item.appendChild(ul);
 
-	if (range != undefined) {
-		item.setAttribute("hexstart", range.start);
-		item.setAttribute("hexstop", range.stop);
+	if (field != undefined) {
+		item.setAttribute("hexstart", field.start);
+		item.setAttribute("hexstop", field.stop);
 	}
 	return ul;
 }
@@ -1236,7 +1471,6 @@ function tree_nav_up(node)
 {
 	var x;
 	for (x = node.parentNode; x; x = x.parentNode) {
-		alert(x.nodeName);
 		if (x.nodeName == "LI")
 			return x;
 	}
