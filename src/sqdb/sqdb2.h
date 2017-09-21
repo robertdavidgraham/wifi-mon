@@ -145,9 +145,8 @@ struct SQDB_Station
     time_t first;
     time_t last;
 
-    struct SquirrelPacket probe;
-    struct SquirrelPacket probe_response;
-
+    struct SquirrelPacket *packet;
+    //struct SquirrelPacket probe_response;
 
 
 	struct SQDB_Station *next;

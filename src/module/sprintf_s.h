@@ -10,7 +10,7 @@
 #define sprintf_s snprintf
 #define strcasecmp_s strcasecmp
 int 
-memcasecmp(const void *lhs, const void *rhs, int length);
+memcasecmp(const void *lhs, const void *rhs, size_t length);
 
 /*
  * Microsoft C

@@ -901,6 +901,7 @@ _end:
 }
 
 
+
 const unsigned char *
 sqdb_lookup_bssid_by_access_point(struct SQDB *sqdb, const unsigned char *mac_address)
 {
@@ -970,8 +971,8 @@ sqdb_add_info(struct SQDB *sqdb, const unsigned char *mac_address, const unsigne
 	struct SQDB_SubStation *sta;
 	struct NVPair **r_data;
 	struct NVPair *d;
-	unsigned name_length = strlen(name);
-	unsigned value_length = strlen(value);
+	size_t name_length = strlen(name);
+	size_t value_length = strlen(value);
 
     if (bssid == 0)
         bssid = (const unsigned char*)"\0\0\0\0\0\0";
@@ -1075,12 +1076,48 @@ unsigned sqdb_add_beacon(
 }
 
 
+static unsigned
+prober_set_packet(struct SQDB_Station *prober, const struct SquirrelPacket *packet)
+{
+    unsigned count = 0;
+    struct SquirrelPacket *pkt;
+    if (prober == NULL)
+        return 0;
+    
+    /* Search forward for a matching packet type. The 'type' will be the 
+     * hash of the information-elements. A single prober should only produce
+     * a single type, though in some cases they'll produce two or three. */
+    for (pkt=prober->packet; pkt; pkt = pkt->next) {
+        /* if found, then return */
+        if (pkt->type == packet->type)
+            return 0;
+        /* if we there are to many, then return, so we don't fill things
+         * up with random junk */
+        if (count++ > 10)
+            return 0;
+    }
+    
+    /* We didn't find one, so let's add one */
+    pkt = malloc(sizeof(*pkt));
+    memcpy(pkt, packet, sizeof(*pkt));
+    pkt->px = malloc(pkt->length);
+    memcpy((void*)pkt->px, packet->px, pkt->length);
+    pkt->next = prober->packet;
+    prober->packet = pkt;
+    return 0;
+}
+
+/**
+ * Create a new "prober" record, if one doesn't already exist. Otherwise,
+ * update the prober data.
+ */
 unsigned sqdb_add_probe_request(
 	struct SQDB *sqdb, 
 	const unsigned char *src_mac,
 	struct SQDB_String ssid,
 	struct SQDB_RateList rates1,
-	struct SQDB_RateList rates2
+	struct SQDB_RateList rates2,
+    const struct SquirrelPacket *pkt
 )
 {
 	struct SQDB_Station *entry;
@@ -1168,10 +1205,39 @@ unsigned sqdb_add_probe_request(
 		sqdb_ratesfield_copy(&entry->rates2, &rates2);
 	}
 
+    prober_set_packet(entry, pkt);
 
 	pixie_leave_critical_section(sqdb->cs);
 	return 0;
 }
+
+unsigned
+sqdb_get_prober_packets(struct SQDB *sqdb, const unsigned char *mac, struct SquirrelPacket *packets)
+{
+    struct SQDB_Station *entry;
+    unsigned index = bssid_hash(mac);
+    unsigned count = 0;
+    struct SquirrelPacket *pkt;
+    
+    pixie_enter_critical_section(sqdb->cs);
+    
+    entry = sqdb->stations[index];
+    while (entry && memcmp(entry->mac_address, mac, 6) != 0)
+        entry = entry->next;
+    if (entry == NULL)
+        goto end;
+    
+    for (pkt = entry->packet; pkt && count<10; pkt = pkt->next) {
+        memcpy(&packets[count], pkt, sizeof(*pkt));
+        count++;
+    }
+    
+    
+end:
+    pixie_leave_critical_section(sqdb->cs);
+    return count;
+}
+
 
 struct TMP_STATIONS *
 alloc_tmp_stations(struct TMP_STATIONS *tmp, unsigned *count, unsigned *maxcount)

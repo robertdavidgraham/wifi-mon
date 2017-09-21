@@ -243,7 +243,7 @@ bool find_string(const unsigned char *px, unsigned length, const char *str, unsi
         if (toupper(px[i]) == c) {
             if (memcasecmp(px+i, str, str_length) == 0) {
                 if (offset)
-                    *offset = i + str_length;
+                    *offset = (unsigned)(i + str_length);
                 return true;
             }
         }

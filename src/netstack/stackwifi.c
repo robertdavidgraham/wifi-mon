@@ -6,6 +6,7 @@
 #include "netframe.h"
 #include "../sqdb/sqdb.h"
 #include "stackwep.h"
+#include "../module/crypto-fnv1a.h"
 
 //#include "val2string.h"	/* for translating OUIs */
 
@@ -600,6 +601,27 @@ void squirrel_get_mac_address(struct NetFrame *frame, const unsigned char *px, u
 
 }
 
+/**
+ * We want to fingerprint the probe packets from a source for a couple reasons.
+ * One reason is that the same source may produce probes with slightly varying
+ * information elements. We want to save a copy of each type of probes in the 
+ * packets we associate with a source. Secondly, the information elemetns can
+ * be a useful way to fingerprint a device, as all devices of a certain type
+ * may have the same information element fingerprint.
+ */
+static unsigned
+hash_information_elements(const unsigned char *px, unsigned offset, unsigned length)
+{
+    /* Kludge alert!
+     * So sometimes we've got the CRC in the IE field which can throw things off.
+     * Removing the last 4 bytes from the field should still give us the same
+     * hashes, so we are going to do that. */
+    if (length - offset > 4)
+        length -= 4;
+    
+    return fnv1a_32(0, px + offset, length - offset);
+}
+
 
 /**
  * This packet is sent out by wireless-stations looking for access-points.
@@ -662,12 +684,23 @@ void squirrel_wifi_proberequest(struct Squirrel *squirrel, struct NetFrame *fram
 		struct SQDB_RateList rates1;
 		struct SQDB_RateList rates2;
 		struct SQDB_String ssid;
+        struct SquirrelPacket pkt[1];
+
+        pkt->length = length;
+        pkt->secs = frame->time_secs;
+        pkt->usecs = frame->time_usecs;
+        pkt->px = px;
+        pkt->linktype = frame->layer2_protocol;
+        pkt->type = hash_information_elements(px, offset, length);
 
 		ssid = ie_to_string(get_information_element(px, offset, length, 0x00));
 		rates1 = ie_to_rate_list(get_information_element(px, offset, length, 0x01));
 		rates2 = ie_to_rate_list(get_information_element(px, offset, length, 0x32));
 
-		sqdb_add_probe_request(squirrel->sqdb, frame->src_mac, ssid, rates1, rates2);
+		sqdb_add_probe_request(squirrel->sqdb,
+                               frame->src_mac, ssid,
+                               rates1, rates2,
+                               pkt);
 		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
 	}
 }

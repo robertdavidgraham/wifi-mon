@@ -93,7 +93,7 @@ display_events_list(struct mg_connection *c, const struct mg_request_info *ri, v
             const char *name = get_station_name(sta);
             if (name && name[0]) {
                 char defanged[128];
-                defang_ssid(defanged, sizeof(defanged), name, strlen(name));
+                defang_ssid(defanged, sizeof(defanged), name, (unsigned)strlen(name));
 		        X(c, "  <td id=\"station\"><a href=\"/station/%02x%02x%02x%02x%02x%02x.html\">\"%s\"</a></td>\n",
 				        sta->mac_address[0],sta->mac_address[1],sta->mac_address[2],
 				        sta->mac_address[3],sta->mac_address[4],sta->mac_address[5],

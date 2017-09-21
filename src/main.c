@@ -21,6 +21,8 @@
 
 #ifdef WIN32
 #include <direct.h> /* for Posix mkdir() */
+#else
+#include <unistd.h>
 #endif
 
 #include "pcapfile.h"
@@ -93,6 +95,10 @@ unsigned control_c_pressed=0;
 void control_c_handler(int sig)
 {
 	control_c_pressed = 1;
+}
+void sigpipe_handler(int sig){
+    
+    fprintf(stderr, "\nCaught signal SIGPIPE %d\n\n",sig);
 }
 
 
@@ -688,6 +694,10 @@ static unsigned filtered_out(struct NetFrame *frame, const char *mac_address)
 		return 1;
 	if (frame->dst_mac && memcmp(frame->dst_mac, mac_address, 6) == 0)
 		return 1;
+    if (frame->bss_mac == 0 && mac_address == 0)
+        return 1;
+    if (frame->bss_mac == 0 || mac_address == 0)
+        return 0;
 	if (frame->bss_mac && memcmp(frame->bss_mac, mac_address, 6) == 0)
 		return 1;
 
@@ -949,7 +959,17 @@ squirrel_set_parameter(struct Squirrel *squirrel, const char *name, const char *
 			squirrel->cfg.quiet = parse_boolean(value);
 		} else
 			fprintf(stderr, "%sunknown parm: %s=%s\n", "ERR:CFG: ", name, value);
-	} else
+    } else
+        
+    if (MATCH("webroot")) {
+        if (squirrel->webroot)
+            free(squirrel->webroot);
+        squirrel->webroot = strdup(value);
+        {
+            char foo[512];
+            fprintf(stderr, "Set root: %s %s\n", getcwd(foo, sizeof(foo)), squirrel->webroot);
+        }
+    } else
 
 	if (MATCH("interface")) {
 		if (MATCH("checkfcs")) {
@@ -958,9 +978,9 @@ squirrel_set_parameter(struct Squirrel *squirrel, const char *name, const char *
 			squirrel->cfg.interface_scan = parse_boolean(value);
 		} else if (MATCH("interval")) {
 			if (MATCH("inactive"))
-				squirrel->interface_interval_inactive = strtoul(value,0,0);
+				squirrel->interface_interval_inactive = (unsigned)strtoul(value,0,0);
 			else if (MATCH("active"))
-				squirrel->interface_interval_active = strtoul(value,0,0);
+				squirrel->interface_interval_active = (unsigned)strtoul(value,0,0);
 			
 		}
 	} else if (MATCH("vector")) {
@@ -990,12 +1010,12 @@ squirrel_set_parameter(struct Squirrel *squirrel, const char *name, const char *
 			squirrel->filter.is_ssh = 1;
 			squirrel->filter.something_tcp = 1;
 		} else if (MATCH("tcp")) {
-			add_port_filter(&squirrel->filter.tcp_ports, &squirrel->filter.tcp_port_count, strtol(value,0,0));
+			add_port_filter(&squirrel->filter.tcp_ports, &squirrel->filter.tcp_port_count, (int)strtol(value,0,0));
 			squirrel->filter.something_tcp = 1;
 		} else if (MATCH("udp")) {
-			add_port_filter(&squirrel->filter.udp_ports, &squirrel->filter.udp_port_count, strtol(value,0,0));
+			add_port_filter(&squirrel->filter.udp_ports, &squirrel->filter.udp_port_count, (int)strtol(value,0,0));
 		} else if (MATCH("snap.oui")) {
-			add_port_filter(&squirrel->filter.snap_ouis, &squirrel->filter.snap_oui_count, strtol(value,0,0));
+			add_port_filter(&squirrel->filter.snap_ouis, &squirrel->filter.snap_oui_count, (int)strtol(value,0,0));
 		} else
 			printf("unknowwn filter %s\n", name);
 	} else if (MATCH("include")) {
@@ -1176,8 +1196,10 @@ main_args(int argc, char **argv, struct Squirrel *squirrel)
 			continue;
 
 		if (arg[1] == '-') {
-			if (strcasecmp_s(arg, "--server"))
-				squirrel_set_parameter(squirrel, "mode", "server", 0);
+            if (strcasecmp_s(arg, "--server") == 0)
+                squirrel_set_parameter(squirrel, "mode", "server", 0);
+            else if (strcasecmp_s(arg, "--webroot") == 0)
+                squirrel_set_parameter(squirrel, "webroot", argv[++i], 0);
 			continue;
 		}
 
@@ -1273,7 +1295,7 @@ static unsigned count_digits(uint64_t n)
 void
 print_stats(const char *str1, unsigned stat1, const char *str2, unsigned stat2)
 {
-	unsigned i;
+	size_t i;
 	unsigned digits;
 
 	/* first number */
@@ -1310,6 +1332,7 @@ extern void xml_probers_list(struct mg_connection *c, const struct mg_request_in
 extern void display_adapters(struct mg_connection *c, const struct mg_request_info *ri, void *user_data);
 extern void display_adapter(struct mg_connection *c, const struct mg_request_info *ri, void *user_data);
 extern void display_decode_beacon(struct mg_connection *c, const struct mg_request_info *ri, void *user_data);
+extern void display_decode_probe(struct mg_connection *c, const struct mg_request_info *ri, void *user_data);
 extern void display_decode_eventpkt(struct mg_connection *c, const struct mg_request_info *ri, void *user_data);
 extern void display_decode_xmitpkt(struct mg_connection *c, const struct mg_request_info *ri, void *user_data);
 
@@ -1451,7 +1474,7 @@ void pcapHandlePacket(unsigned char *v_seap,
 	frame->layer2_protocol = squirrel->linktype;
 	frame->frame_number++;
 	
-	frame->time_secs = framehdr->ts.tv_sec;
+	frame->time_secs = (unsigned)framehdr->ts.tv_sec;
 	frame->time_usecs = framehdr->ts.tv_usec;
 	frame->original_length = framehdr->len;
 	frame->captured_length = framehdr->caplen;
@@ -1639,7 +1662,7 @@ void squirrel_monitor_thread(void *user_data)
 
 void launch_thread(struct Squirrel *squirrel, const char *adapter_name)
 {
-	int result;
+	ptrdiff_t result;
 	struct MonitorThread *mt = (struct MonitorThread*)malloc(sizeof(*mt));
 	memset(mt, 0, sizeof(*mt));
 	sprintf_s(mt->devicename, sizeof(mt->devicename), "%s", adapter_name);
@@ -1678,7 +1701,9 @@ int FERRET_MAIN(int argc, char **argv)
 	 * last bit of data gets corrupted when the user hits <ctrl-c>
 	 */
 	signal(SIGINT, control_c_handler);
-
+    signal(SIGPIPE, sigpipe_handler);
+    
+    
 	/*
 	 * Runtime-load the libpcap shared-object or the winpcap DLL. We
 	 * load at runtime rather than loadtime to allow this program to 
@@ -1724,24 +1749,27 @@ int FERRET_MAIN(int argc, char **argv)
 	/*
 	 * Mongoose simple HTTPD
 	 */
-	{
-			void *mongoose_ctx = mg_start();
-			mg_set_option(mongoose_ctx, "ports", "1234");
-
-			mg_bind_to_uri(mongoose_ctx, "/", &display_bssid_list, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/accesspoints.html", &display_bssid_list, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/probers.html", &display_probers_list, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/events.html", &display_events_list, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/probers.xml", &xml_probers_list, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/bssids.xml", &xml_bssid_list, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/bssid/*", &display_bssid_item, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/station/*", &display_station_item, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/adapters.html", &display_adapters, squirrel);
-			mg_bind_to_uri(mongoose_ctx, "/adapter/*", &display_adapter, squirrel);
-			mg_bind_to_uri(mongoose_ctx, "/beacon/*", &display_decode_beacon, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/eventpkt/*", &display_decode_eventpkt, squirrel->sqdb);
-			mg_bind_to_uri(mongoose_ctx, "/xmit.html", &display_decode_xmitpkt, squirrel->sqdb);
-	}
+    {
+        void *mongoose_ctx = mg_start();
+        mg_set_option(mongoose_ctx, "ports", "1234");
+        if (squirrel->webroot)
+            mg_set_option(mongoose_ctx, "root", squirrel->webroot);
+        
+        mg_bind_to_uri(mongoose_ctx, "/", &display_bssid_list, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/accesspoints.html", &display_bssid_list, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/probers.html", &display_probers_list, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/events.html", &display_events_list, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/probers.xml", &xml_probers_list, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/bssids.xml", &xml_bssid_list, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/bssid/*", &display_bssid_item, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/station/*", &display_station_item, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/adapters.html", &display_adapters, squirrel);
+        mg_bind_to_uri(mongoose_ctx, "/adapter/*", &display_adapter, squirrel);
+        mg_bind_to_uri(mongoose_ctx, "/beacon/*", &display_decode_beacon, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/probe/*", &display_decode_probe, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/eventpkt/*", &display_decode_eventpkt, squirrel->sqdb);
+        mg_bind_to_uri(mongoose_ctx, "/xmit.html", &display_decode_xmitpkt, squirrel->sqdb);
+    }
 
 	for (i=1; i<argc; i++) {
 		if (argv[i][0] != '-')

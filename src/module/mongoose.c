@@ -1050,9 +1050,9 @@ pull(int fd, SOCKET sock, SSL *ssl, char *buf, int len)
 	if (ssl != NULL) {
 		nread = SSL_read(ssl, buf, len);
 	} else if (fd != -1) {
-		nread = read(fd, buf, (size_t) len);
+		nread = (int)read(fd, buf, (size_t) len);
 	} else {
-		nread = recv(sock, buf, (size_t) len, 0);
+		nread = (int)recv(sock, buf, (size_t) len, 0);
 	}
 
 	if (nread < 0)
@@ -2192,7 +2192,7 @@ send_opened_file_stream(struct mg_connection *conn, int fd, uint64_t len)
 		n = sizeof(buf);
 		if ((uint64_t) n > len)
 			n = (int) len;
-		if ((n = read(fd, buf, n)) <= 0)
+		if ((n = (int)read(fd, buf, n)) <= 0)
 			break;
 		conn->num_bytes_sent += mg_write(conn, buf, n);
 		len -= n;
@@ -3589,6 +3589,7 @@ process_new_connection(struct mg_connection *conn)
 	struct mg_request_info *ri = &conn->request_info;
 	char	buf[MAX_REQUEST_SIZE];
 	int	request_len, nread;
+    fprintf(stderr, "[open connection]\n"); fflush(stderr);
 
 	nread = 0;
 	do {
@@ -3633,6 +3634,7 @@ process_new_connection(struct mg_connection *conn)
 
 	} while (conn->keep_alive);
 
+    fprintf(stderr, "[close connection]\n"); fflush(stderr);
 	close_connection(conn);
 }
 

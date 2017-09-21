@@ -313,7 +313,7 @@ unsigned parse_oui(const char *p, unsigned *bytes_parsed)
         p++;
     }
 
-    *bytes_parsed = p-start;
+    *bytes_parsed = (unsigned)(p - start);
     return result;
 }
 

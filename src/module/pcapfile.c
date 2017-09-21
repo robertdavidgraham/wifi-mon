@@ -339,7 +339,7 @@ int pcapfile_readframe(
 		for (i=0; i<bytes_read; i++) {
 			
 			/* Test the current location */
-			if (!smells_like_valid_packet(tmp+i, bytes_read-i, byte_order, capfile->linktype))
+			if (!smells_like_valid_packet(tmp+i, (unsigned)(bytes_read - i), byte_order, capfile->linktype))
 				continue;
 
 			/* Woot! We have a non-corrupt packet. Let's now change the

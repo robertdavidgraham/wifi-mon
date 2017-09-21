@@ -3,6 +3,7 @@
 #include <time.h>
 
 struct SQDB;
+struct SquirrelPacket;
 
 /**
  * Holds a list of rates. There are two lists, one originally
@@ -54,12 +55,13 @@ unsigned sqdb_add_beacon(
  * Called when we see a probe packet from a station
  */
 unsigned sqdb_add_probe_request(
-	 struct SQDB *sqdb, 
-	 const unsigned char *mac_address,
-	 struct SQDB_String ssid,
-	 struct SQDB_RateList rates1,
-	 struct SQDB_RateList rates2
-	 );
+	struct SQDB *sqdb, 
+	const unsigned char *mac_address,
+	struct SQDB_String ssid,
+	struct SQDB_RateList rates1,
+	struct SQDB_RateList rates2,
+    const struct SquirrelPacket *pkt
+	);
 
 
 
@@ -119,6 +121,8 @@ void
 sqdb_set_bssid_auth_type(struct SQDB *sqdb, const unsigned char *bssid, unsigned auth_type);
 
 struct SquirrelPacket {
+    struct SquirrelPacket *next;
+    unsigned type;
 	const unsigned char *px;
 	unsigned length;
 	time_t secs;
@@ -137,8 +141,16 @@ enum {
 unsigned
 sqdb_set_bssid_packet(struct SQDB *sqdb, const unsigned char *bssid, unsigned type, const struct SquirrelPacket *pkt);
 
-unsigned 
+unsigned
 sqdb_get_bssid_packet(struct SQDB *sqdb, const unsigned char *bssid, unsigned type, struct SquirrelPacket *pkt);
+unsigned
+sqdb_get_prober_packets(struct SQDB *sqdb, const unsigned char *mac, struct SquirrelPacket *packets);
+
+unsigned
+sqdb_set_prober_packet(struct SQDB *sqdb, const unsigned char *bssid, unsigned type, const struct SquirrelPacket *pkt);
+
+unsigned
+sqdb_get_prober_packet(struct SQDB *sqdb, const unsigned char *bssid, unsigned type, struct SquirrelPacket *pkt);
 
 /**
  * Register the fact that we have seen a base-station/access-point with the given

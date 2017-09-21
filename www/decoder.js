@@ -362,6 +362,12 @@ function decode_packet_summary(summarytable, d, px, packet_number)
 		add_summary_field(row, "IEEE 802.11");
 		cell = add_summary_field(row, "Reassociation Response");
 		break;
+	case 0x40:
+		add_summary_field(row, translate_mac_address(macaddr_to_hex(px,10)));
+		add_summary_field(row, translate_mac_address(macaddr_to_hex(px,4)));
+		add_summary_field(row, "IEEE 802.11");
+		cell = add_summary_field(row, "Probe Request");
+		break;
 	case 0x80:
 	case 0x50:
 		add_summary_field(row, translate_mac_address(macaddr_to_hex(px,10)));
@@ -407,7 +413,7 @@ function Range(start,stop,px)
         var result = new Range(this.start, this.stop, this.px);
         if (offset)
             result.start += offset;
-        if (length)
+        if (length !== undefined)
             result.stop = result.start + length;
         return result;
     }
@@ -428,7 +434,38 @@ function Range(start,stop,px)
 
         DECODEITEM(node, text + ": " + value, this);
         return value;
-    }
+	}
+	this.MACADDR = function(node, text) {
+		var addr = "";
+		var px = this.slice();
+		
+		for (i=0; i<6 && i<px.length; i++) {
+			addr = addr + val_to_hex(px[i]>>4) + val_to_hex(px[i]&0xF);
+			if (i<5)
+				addr = addr + ":";
+		}
+		
+		if (macnames && macnames[addr]) {
+			addr = '"' + macnames[addr] + '" (' + addr + ")";
+		}
+		
+		var item = DECODEITEM(node, text + ": " + addr, this);
+		
+		return item;
+		
+	}
+	this.FLAG = function (node, mask, name, e) {
+		if (this.len() == 1)
+			DECODEFLAG8(node, this.byteAt(0), mask, this, name, e);
+		else if (this.len() == 2)
+			DECODEFLAG1_16(node, this.byteAt(0)<<8 | this.byteAt(1), mask, this, name, e);
+	}
+	this.FLAGLE = function (node, mask, name, e) {
+		if (this.len() == 1)
+			DECODEFLAG8(node, this.byteAt(0), mask, this, name, e);
+		else if (this.len() == 2)
+			DECODEFLAG1_16(node, this.byteAt(1)<<8 | this.byteAt(0), mask, this, name, e);
+	}
 	return this;
 }
                                                              
@@ -723,19 +760,20 @@ function decode_wpa_items(node, px, offset)
 	return offset;
 }
 
+var Supported = {0:"Not supported", 1:"Supported"};
 function decode_tagged_parm(node, tag, field)
 {
     var px = field.slice();
     
 	switch (tag) {
 	case 0: /* SSID */
-        var d = field.toDisplayString();
+		var d = field.toDisplayString();
 		DECODEITEM(node, 'SSID parameter set: "' + d + '"', field);
 		break;
 	case 1: /* Supported Rates */
 		d = parse_rates(field.slice());
 		DECODEITEM(node, "Supported rates: " + d + "[Mbps]", field);
-		break;
+		break
 	case 3:
 		if (field.len() == 1) {
             DECODEITEM(node, "DS Parameter set: Current Channel: " + field.byteAt(0), field.sub(0,1));
@@ -849,7 +887,21 @@ function decode_tagged_parm(node, tag, field)
                 DECODEITEM(f, "Width Channel Transition Delay Factor: "+ex16le(px,10), field.sub(10, 12));
                 DECODEITEM(f, "Scan Activity Threshold: "+ex16le(px,12), field.sub(12, 14));
             }
-            break;
+			break;
+		case 107: /* Internetworking */
+			f = DECODETREE(node, "Internetworking", field);
+			toggle(f.parentNode);
+			if (px.length >= 1) {
+				DECODEFLAG8(f, px[0], 0x0F, field.sub(0,1), "Access Network Type", {15: "Wildcard"});
+				DECODEFLAG8(f, px[0], 0x10, field.sub(0,1), "Internet", {0: "no",1:"yes"});
+				DECODEFLAG8(f, px[0], 0x20, field.sub(0,1), "ASRA", {0: "no",1:"yes"});
+				DECODEFLAG8(f, px[0], 0x40, field.sub(0,1), "ESR", {0: "no",1:"yes"});
+				DECODEFLAG8(f, px[0], 0x80, field.sub(0,1), "UESA", {0: "no",1:"yes"});
+			}
+			if (px.length >= 7) {
+				field.sub(1,6).MACADDR(f, "HESSID");
+			}
+			break;
         case 127: /* EXTENDED CAPABILITIES */
             f = DECODETREE(node, "Extended Capabilities", field);
             toggle(f.parentNode);
@@ -924,7 +976,33 @@ function decode_tagged_parm(node, tag, field)
 
             }
             break;
-
+	case 191:
+		f = DECODETREE(node, "VHT Capabilities (802.11ac D3.1)", field);
+		toggle(f.parentNode);
+		if (field.len() >= 1) {
+			field.sub(0,1).FLAG(f, 0x03, "Max MPDU Length", {2: "11,454"});
+			field.sub(0,1).FLAG(f, 0x0C, "Channel Width Set", {0: "Neither 160mhz or 80mhz+80mhz"});
+			field.sub(0,1).FLAG(f, 0x10, "Rx LDPC", Supported);
+			field.sub(0,1).FLAG(f, 0x20, "Short GI for 80mhz", Supported);
+			field.sub(0,1).FLAG(f, 0x40, "Short GI for 160mhz/80+80mhz", Supported);
+			field.sub(0,1).FLAG(f, 0x80, "Tx STBC", Supported);
+			field.sub(1,1).FLAG(f, 0x07, "Rx STBC", {0:"None"});
+			field.sub(1,1).FLAG(f, 0x08, "SU Beam-Former Capable", Supported);
+			field.sub(1,1).FLAG(f, 0x10, "SU Beam-Formee Capable", Supported);
+			field.sub(1,1).FLAG(f, 0xE0, "Compressed Steering Number of Beamformer Antennas", {2:"3"});
+			field.sub(2,1).FLAG(f, 0x07, "Number of Sounding Dimensions", {1:"2"});
+			field.sub(2,1).FLAG(f, 0x08, "MU Beam-former Capable", Supported);
+			field.sub(2,1).FLAG(f, 0x10, "MU Beam-formee Capable", Supported);
+			field.sub(2,1).FLAG(f, 0x20, "VHT TXOP PS", Supported);
+			field.sub(2,1).FLAG(f, 0x40, "+HTC-VHT Capable", Supported);
+			field.sub(2,2).FLAGLE(f, 0x0380,"Max A-MPDU Length", {7:"1,048,575"});
+			field.sub(2,2).FLAGLE(f, 0x0C00, "VHT Link Adaptation", {3:"both"});
+			field.sub(2,2).FLAGLE(f, 0x1000, "Rx Antenna Consistency", Supported);
+			field.sub(2,2).FLAGLE(f, 0x2000, "Tx Antenna Consistency", Supported);
+			
+		}
+		break;
+        
 	case 0x85:
 		var cisco_name = "";
 		if (px.length > 26) {
@@ -1025,6 +1103,8 @@ function decode_capability(node, px, offset, r)
     DECODEFLAG1_16(c, flags, 0x4000, r, "Delayed Block Ack",	{0:"not implemented",	1:"implemented"});
     DECODEFLAG1_16(c, flags, 0x8000, r, "Immediate Block Ack",	{0:"not implemented",	1:"implemented"});
 }
+
+
 function decode_wifi_beacon(node, px)
 {
     var field = new Range(0, px.length, px);
@@ -1049,6 +1129,25 @@ function decode_wifi_beacon(node, px)
 
 	if (field.len() > 36) {
 		decode_tagged_parms(parms, field.sub(36));
+	}
+
+	return header;
+}
+
+function decode_wifi_probe(node, px)
+{
+    var field = new Range(0, px.length, px);
+	if (field.len() < 24)
+		return node;
+	
+	header_length = 24;
+	header = decode_mgmnt_header(node, px);
+
+	parms = DECODETREE(node, "IEEE 802.11 wireless LAN", field.sub(24));
+	
+
+	if (field.len() > 24) {
+		decode_tagged_parms(parms, field.sub(24));
 	}
 
 	return header;
@@ -1143,6 +1242,7 @@ function decode_mgmnt_header(node, px)
 		0x00: "Reassociation Request ",
 		0x10: "Association Response ",
 		0x30: "Reassociation Response ",
+		0x40: "Probe Request ",
 		0x50: "Probe Response ",
 		0x80: "Beacon ",
 		0xb0: "Authentication ",
@@ -1215,6 +1315,8 @@ function decode_wifi(node, bytes)
 	case 0x10:
 	case 0x30: /* Re-association response*/
 		return decode_wifi_associate_response(node, bytes);
+	case 0x40: /* Probe Request */
+		return decode_wifi_probe(node, bytes);
 	case 0x80: 
 	case 0x50:
 		return decode_wifi_beacon(node, bytes);
@@ -1383,6 +1485,20 @@ function DECODEFLAG1_16(node, flags, mask, r, name, e)
 	DECODEITEM(node, bits + " = " + name + ": " + ENUM((mask&flags), e), r );
 }
 
+function DECODEFLAG8(node, flags, mask, r, name, e)
+{
+	var bits = "";
+	for (i=0; i<8; i++) {
+		bits = bits + BIT(flags,mask,1<<(7-i));
+		if (i == 3) bits = bits + " ";
+		
+	}
+	while (mask != 0 && (mask&1) == 0) {
+		mask = mask >> 1;
+		flags = flags >> 1;
+	}
+	DECODEITEM(node, bits + " = " + name + ": " + ENUM((mask&flags), e), r );
+}
 
 /**
  * Add a line to the protocol decode with the specified text contents

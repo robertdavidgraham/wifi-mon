@@ -201,7 +201,10 @@ display_station_item(struct mg_connection *c, const struct mg_request_info *ri, 
 					        mac_address[0],mac_address[1],mac_address[2],
 					        mac_address[3],mac_address[4],mac_address[5]
 					        );
-	        X(c, "   <th>Probes:</th><td id=\"dataout\" class=\"sent\">%s</td>\n", format_unsigned(sta->probe_count,buf,sizeof(buf)));
+	        X(c, "   <th><a href=\"../probe/%02x%02x%02x%02x%02x%02x.html\"><img src=\"../decoder.ico\" />Probes</a>:</th><td id=\"dataout\" class=\"sent\">%s</td>\n",
+              mac_address[0],mac_address[1],mac_address[2],
+              mac_address[3],mac_address[4],mac_address[5],
+              format_unsigned(sta->probe_count,buf,sizeof(buf)));
 	        X(c, "   <th>Responses:</th><td id=\"datain\" class=\"sent\">%s</td>\n", format_unsigned(0,buf,sizeof(buf)));
 	        X(c, "  </tr>\n");
 	        X(c, "  <tr id=\"7\">\n");

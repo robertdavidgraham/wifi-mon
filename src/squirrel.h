@@ -57,6 +57,9 @@ struct Squirrel
 	unsigned is_ignoring_errors:1;
 	unsigned is_verbose:1;
 
+    /* The root directory for the web server */
+    char *webroot;
+    
 	union {
 		struct {
 			unsigned something_found:1;

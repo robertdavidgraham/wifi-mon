@@ -619,7 +619,7 @@ dns_parse_resource_record(struct Squirrel *squirrel, struct NetFrame *frame,
 			 * 0.91.1:44:3855:1186270141:1
 			 */
 			break;
-		} else if (starts_with("_DM-NOTIFICATION.", name, strlen(name))) {
+		} else if (starts_with("_DM-NOTIFICATION.", name, (unsigned)strlen(name))) {
 			/* Regress: defcon2008\dump001.pcap(87082) */
 			/* TODO */
 			break;

@@ -163,7 +163,7 @@ display_decode_eventpkt(struct mg_connection *c, const struct mg_request_info *r
         if (name && name[0]) {
             const unsigned char *mac = event->sta->mac_address;
             char defanged[64];
-            defang_ssid(defanged, sizeof(defanged), name, strlen(name));
+            defang_ssid(defanged, sizeof(defanged), name, (unsigned)strlen(name));
             
             X(c, ",\n \"%02x:%02x:%02x:%02x:%02x:%02x\": \"%s\"",
 					mac[0],mac[1],mac[2],
