@@ -1754,7 +1754,10 @@ unsigned filtered_out(struct NetFrame *frame, const char *mac_address)
  * TODO: at some point, we'll add the ability to import WEP and WAP keys to
  * automatically decrypt packets.
  */
-void squirrel_wifi_frame(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length)
+void
+squirrel_wifi_frame(struct Squirrel *squirrel,
+                    struct NetFrame *frame,
+                    const unsigned char *px, unsigned length)
 {
 	unsigned version, type, subtype;
 

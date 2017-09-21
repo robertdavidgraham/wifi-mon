@@ -285,7 +285,10 @@ ferret_filter_mac(struct Squirrel *squirrel, const unsigned char *mac_addr)
 }
 
 
-void squirrel_frame(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length)
+void
+squirrel_frame(struct Squirrel *squirrel,
+               struct NetFrame *frame,
+               const unsigned char *px, unsigned length)
 {
 	/* Record the current time */
 	if (squirrel->now != (time_t)frame->time_secs) {
@@ -387,7 +390,15 @@ void squirrel_frame(struct Squirrel *squirrel, struct NetFrame *frame, const uns
 			offset = 8;
 
 			if (features & 0x000001) offset += 8;	/* TSFT - Timestamp */
-			if (features & 0x000002) offset += 1;	/* Flags */	
+            if (features & 0x000002) {
+                flags = px[offset];
+                offset += 1;
+                
+                /* If there's an FCS at the end, then remove it so that we
+                 * don't try to decode it as payload */
+                if (flags & 0x10)
+                    length -= 4;
+            }
 			if (features & 0x000004) offset += 1;	/* Rate */	
             if (features & 0x000008 && offset+2<header_length) {
                 unsigned channel_frequency = ex16le(px+offset);
