@@ -16,7 +16,7 @@
 */
 #include "platform.h"
 #include "netframe.h"
-#include "squirrel.h"
+#include "../squirrel.h"
 #include "formats.h"
 #include "hexval.h"
 #include <string.h>

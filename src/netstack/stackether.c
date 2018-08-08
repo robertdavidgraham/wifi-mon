@@ -9,7 +9,7 @@
   TODO: we need to support more encapsulations, such as 802.2 SAP
   packets.
 */
-#include "squirrel.h"
+#include "../squirrel.h"
 #include "formats.h"
 #include "netframe.h"
 #include <string.h>

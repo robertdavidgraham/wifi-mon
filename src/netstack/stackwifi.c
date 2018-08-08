@@ -1,7 +1,7 @@
 /* Copyright (c) 2007 by Errata Security, All Rights Reserved
  * Programer(s): Robert David Graham [rdg]
  */
-#include "squirrel.h"
+#include "../squirrel.h"
 #include "formats.h"
 #include "netframe.h"
 #include "../sqdb/sqdb.h"

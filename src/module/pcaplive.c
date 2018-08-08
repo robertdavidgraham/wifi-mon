@@ -107,15 +107,6 @@ static char *null_PCAP_LOOKUPDEV(char *errbuf)
 }
 
 
-static void * null_PCAP_OPEN_LIVE(const char *devicename, unsigned snap_length, unsigned is_promiscuous, unsigned read_timeout, char *errbuf)
-{
-#ifdef STATICPCAP
-	return pcap_open_live(devicename, snap_length, is_promiscuous, read_timeout, errbuf);
-#endif
-	seterr(errbuf, "libpcap not loaded");
-	UNUSEDPARM(devicename);UNUSEDPARM(snap_length);UNUSEDPARM(is_promiscuous);UNUSEDPARM(read_timeout);
-	return NULL;
-}
 
 static int null_PCAP_MAJOR_VERSION(void *p)
 {
@@ -145,18 +136,21 @@ static const char *null_PCAP_LIB_VERSION(void)
 	return "stub/0.0";
 }
 
-static int null_PCAP_CAN_SET_RFMON(void *hPcap)
-{
-    return 0;
-}
-static void null_PCAP_SET_RFMON(void *hPcap)
-{
-    ;
-}
 static int null_PCAP_SET_DATALINK(void *hPcap, int datalink)
 {
     return -1;
 }
+
+static pcap_t *null_PCAP_CREATE(const char *source, char *errbuf) {fprintf(stderr, "pcap_create() error\n"); return 0;}
+static int (*null_PCAP_SET_SNAPLEN)(pcap_t *p, int snaplen);
+static int (*null_PCAP_SET_PROMISC)(pcap_t *p, int promisc);
+static int (*null_PCAP_SET_TIMEOUT)(pcap_t *p, int to_ms);
+static int (*null_PCAP_SET_IMMEDIATE_MODE)(pcap_t *p, int immediate_mode);
+static int (*null_PCAP_SET_BUFFER_SIZE)(pcap_t *p, int buffer_size);
+static int (*null_PCAP_SET_RFMON)(pcap_t *p, int rfmon);
+static int (*null_PCAP_CAN_SET_RFMON)(pcap_t *p);
+static int (*null_PCAP_ACTIVATE)(pcap_t *p);
+
 
 #ifdef WIN32
 static void *null_PCAP_GET_AIRPCAP_HANDLE(void *p)
@@ -310,10 +304,10 @@ void pcaplive_init(struct PCAPLIVE *pl)
 
 #define DOLINK(PCAP_DATALINK, datalink) \
 	pl->datalink = (PCAP_DATALINK)dlsym(hLibpcap, "pcap_"#datalink); \
-	if (pl->datalink == NULL) pl->func_err=1, pl->datalink = null_##PCAP_DATALINK;
+if (pl->datalink == NULL) { pl->func_err=1, pl->datalink = null_##PCAP_DATALINK; fprintf(stderr, "error loading pcap_"#datalink);}
 #else
 #define DOLINK(PCAP_DATALINK, datalink) \
-	pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
+pl->func_err=0, pl->datalink = pcap_##datalink;
 #endif
 #endif
 
@@ -340,15 +334,25 @@ void pcaplive_init(struct PCAPLIVE *pl)
 	DOLINK(PCAP_LOOKUPDEV		, lookupdev);
 	DOLINK(PCAP_MAJOR_VERSION	, major_version);
 	DOLINK(PCAP_MINOR_VERSION	, minor_version);
-	DOLINK(PCAP_OPEN_LIVE		, open_live);
+	//DOLINK(PCAP_OPEN_LIVE		, open_live);
 #ifdef WIN32
 	DOLINK(PCAP_GET_AIRPCAP_HANDLE, get_airpcap_handle);
 #endif
 
 
-	DOLINK(PCAP_CAN_SET_RFMON   , can_set_rfmon);
-    DOLINK(PCAP_SET_RFMON       , set_rfmon);
+	//DOLINK(PCAP_CAN_SET_RFMON   , can_set_rfmon);
+    //DOLINK(PCAP_SET_RFMON       , set_rfmon);
     DOLINK(PCAP_SET_DATALINK    , set_datalink);
+
+    DOLINK(PCAP_CREATE              , create);
+    DOLINK(PCAP_SET_SNAPLEN         , set_snaplen);
+    DOLINK(PCAP_SET_PROMISC         , set_promisc);
+    DOLINK(PCAP_SET_TIMEOUT         , set_timeout);
+    DOLINK(PCAP_SET_IMMEDIATE_MODE  , set_immediate_mode);
+    DOLINK(PCAP_SET_BUFFER_SIZE     , set_buffer_size);
+    DOLINK(PCAP_SET_RFMON           , set_rfmon);
+    DOLINK(PCAP_CAN_SET_RFMON       , can_set_rfmon);
+    DOLINK(PCAP_ACTIVATE            , activate);
 
     
 	//DOLINK(PCAP_OPEN_LIVE		, open_live);

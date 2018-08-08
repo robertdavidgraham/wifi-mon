@@ -38,7 +38,7 @@
 */
 #include "platform.h"
 #include "netframe.h"
-#include "squirrel.h"
+#include "../squirrel.h"
 #include "formats.h"
 #include <string.h>
 #include <ctype.h>

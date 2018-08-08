@@ -1526,7 +1526,7 @@ get_link_name_from_type(unsigned linktype)
 static void
 wifi_set_channel(void *hPcap, unsigned channel, const char *interface_name)
 {
-
+    fprintf(stderr, "Change channel: %s %d\n", interface_name, channel);
 #ifdef __linux
 	{
 		char cmd[256];
@@ -1551,7 +1551,17 @@ wifi_set_channel(void *hPcap, unsigned channel, const char *interface_name)
 		}
 	}
 #endif
-
+#ifdef __APPLE__
+    {
+        char cmd[256];
+        int result;
+        sprintf_s(cmd, sizeof(cmd), "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport %s -c%d\n", interface_name, channel);
+        fprintf(stderr, "CHANGE: %s", cmd);
+        result = system(cmd);
+        if (result != 0)
+            fprintf(stderr, "CHANGE: %s (FAILED)", cmd);
+    }
+#endif
 }
 
 
@@ -1585,27 +1595,35 @@ void squirrel_monitor_thread(void *user_data)
 	/*
 	 * Open the adapter
 	 */
-	hPcap = pcap.open_live( devicename,
+#if 0
+	hPcap =  pcap.open_live( devicename,
 							4000,				/*snap len*/
 							1,					/*promiscuous*/
 							10,					/*10-ms read timeout*/
 							errbuf
 							);
-	if (hPcap == NULL) {
+#endif
+    hPcap = pcap.create(devicename, errbuf);
+    if (hPcap == NULL) {
 		squirrel_set_interface_status(squirrel, devicename, 0, interface_channel);
 		fprintf(stderr, "%s: %s\n", devicename, errbuf);
 		return;
-	} else {
-		squirrel_set_interface_status(squirrel, devicename, 1, interface_channel);
-		fprintf(stderr, "%s: monitoring\n", devicename);
 	}
+    fprintf(stderr, "set_snaplen\n"); fflush(stderr);
+    pcap.set_snaplen(hPcap, 4096);
+    pcap.set_promisc(hPcap, 1);
+    pcap.set_timeout(hPcap, 10);
+    pcap.set_immediate_mode(hPcap, 1);
     
     if (pcap.can_set_rfmon(hPcap) == 1) {
         fprintf(stderr, "%s: setting monitor mode\n", devicename);
-        pcap.set_rfmon(hPcap);
+        pcap.set_rfmon(hPcap, 1);
         pcap.set_datalink(hPcap, 127);
     }
 
+    pcap.activate(hPcap);
+    squirrel_set_interface_status(squirrel, devicename, 1, interface_channel);
+    fprintf(stderr, "%s: monitoring\n", devicename);
 
 
 	squirrel->linktype = pcap.datalink(hPcap);

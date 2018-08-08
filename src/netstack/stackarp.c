@@ -20,7 +20,7 @@
 #include "platform.h"
 #include "netframe.h"
 #include "formats.h"
-#include "squirrel.h"
+#include "../squirrel.h"
 #include <stdio.h>
 #include "sprintf_s.h"
 

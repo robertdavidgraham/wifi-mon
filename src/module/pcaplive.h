@@ -13,6 +13,8 @@ extern "C" {
  * some platforms, we might want to statically link to it instead. */
 #include <pcap.h>
 #else
+typedef struct pcap pcap_t;
+    
 struct pcap_if {
 	struct pcap_if *next;
 	char *name;		/* name to hand to "pcap_open_live()" */
@@ -51,14 +53,25 @@ typedef const char *(*PCAP_LIB_VERSION)(void);
 typedef char *(*PCAP_LOOKUPDEV)(char *errbuf);
 typedef int (*PCAP_MAJOR_VERSION)(void *p);
 typedef int (*PCAP_MINOR_VERSION)(void *p);
-typedef void * (*PCAP_OPEN_LIVE)(const char *devicename, unsigned snap_length, unsigned is_promiscuous, unsigned read_timeout, char *errbuf);
+//typedef void * (*PCAP_OPEN_LIVE)(const char *devicename, unsigned snap_length, unsigned is_promiscuous, unsigned read_timeout, char *errbuf);
 typedef void (*PCAP_FREEALLDEVS)(pcap_if_t *alldevs);
 typedef void * (*PCAP_GET_AIRPCAP_HANDLE)(void *p);
 typedef unsigned (*AIRPCAP_SET_DEVICE_CHANNEL)(void *p, unsigned channel);
 typedef unsigned (*CAN_TRANSMIT)(const char *devicename);
-typedef int (*PCAP_CAN_SET_RFMON)(void *hPcap);
-typedef void (*PCAP_SET_RFMON)(void *hPcap);
+//typedef int (*PCAP_CAN_SET_RFMON)(void *hPcap);
+//typedef void (*PCAP_SET_RFMON)(void *hPcap);
 typedef int (*PCAP_SET_DATALINK)(void *hPcap, int datalink);
+    
+    typedef pcap_t *(*PCAP_CREATE)(const char *source, char *errbuf);
+    typedef int (*PCAP_SET_SNAPLEN)(pcap_t *p, int snaplen);
+    typedef int (*PCAP_SET_PROMISC)(pcap_t *p, int promisc);
+    typedef int (*PCAP_SET_TIMEOUT)(pcap_t *p, int to_ms);
+    typedef int (*PCAP_SET_IMMEDIATE_MODE)(pcap_t *p, int immediate_mode);
+    typedef int (*PCAP_SET_BUFFER_SIZE)(pcap_t *p, int buffer_size);
+    typedef int (*PCAP_SET_RFMON)(pcap_t *p, int rfmon);
+    typedef int (*PCAP_CAN_SET_RFMON)(pcap_t *p);
+    typedef int (*PCAP_ACTIVATE)(pcap_t *p);
+
     
 struct PCAPLIVE
 {
@@ -77,7 +90,7 @@ struct PCAPLIVE
 	PCAP_LIB_VERSION	lib_version;
 	PCAP_MAJOR_VERSION	major_version;
 	PCAP_MINOR_VERSION	minor_version;
-	PCAP_OPEN_LIVE		open_live;
+	//PCAP_OPEN_LIVE		open_live;
 	PCAP_GET_AIRPCAP_HANDLE get_airpcap_handle;
 	AIRPCAP_SET_DEVICE_CHANNEL airpcap_set_device_channel;
 	//AIRPCAP_SET_FCS_PRESENCE airpcap_set_fcs_presence;
@@ -85,9 +98,20 @@ struct PCAPLIVE
 
 	CAN_TRANSMIT		can_transmit;
     
-    PCAP_CAN_SET_RFMON  can_set_rfmon;
-    PCAP_SET_RFMON      set_rfmon;
+    //PCAP_CAN_SET_RFMON  can_set_rfmon;
+    //PCAP_SET_RFMON      set_rfmon;
     PCAP_SET_DATALINK   set_datalink;
+    
+    PCAP_CREATE              create;
+    PCAP_SET_SNAPLEN         set_snaplen;
+    PCAP_SET_PROMISC         set_promisc;
+    PCAP_SET_TIMEOUT         set_timeout;
+    PCAP_SET_IMMEDIATE_MODE  set_immediate_mode;
+    PCAP_SET_BUFFER_SIZE     set_buffer_size;
+    PCAP_SET_RFMON           set_rfmon;
+    PCAP_CAN_SET_RFMON       can_set_rfmon;
+    PCAP_ACTIVATE            activate;
+
 };
 
 /**

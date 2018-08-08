@@ -10,6 +10,34 @@ struct Manufs {
     char *desc;
 };
 
+#if 0
+{0x08:E6:89 Apple    Apple, Inc.
+{0x08:F6:9C Apple    Apple, Inc.
+{0x0C:70:4A HuaweiTe    Huawei Technologies Co.,Ltd
+{0x10:94:BB Apple    Apple, Inc.
+{0x2C:61:F6 Apple    Apple, Inc.
+{0x38:80:DF Motorola    Motorola Mobility LLC, a Lenovo Company
+{0x3C:DC:BC SamsungE    Samsung Electronics Co.,Ltd
+{0x40:98:AD Apple    Apple, Inc.
+{0x50:A6:7F Apple    Apple, Inc.
+{0x50:BC:96 Apple    Apple, Inc.
+{0x64:70:33 Apple    Apple, Inc.
+{0x80:AD:16 XiaomiCo    Xiaomi Communications Co Ltd
+{0x88:AE:07 Apple    Apple, Inc.
+{0x94:BF:2D Apple    Apple, Inc.
+{0x98:22:EF LiteonTe    Liteon Technology Corporation
+{0xC0:B6:58 Apple    Apple, Inc.
+{0xC4:61:8B Apple    Apple, Inc.
+{0xC4:84:66 Apple    Apple, Inc.
+{0xCC:2D:B7 Apple    Apple, Inc.
+{0xD0:2B:20 Apple    Apple, Inc.
+{0xD4:61:DA Apple    Apple, Inc.
+{0xD4:A3:3D Apple    Apple, Inc.
+{0xDC:56:E7 Apple    Apple, Inc.
+{0xE4:E0:A6 Apple    Apple, Inc.
+{0xF0:0F:EC HuaweiTe    Huawei Technologies Co.,Ltd
+#endif
+
 struct Manufs xmanufs[] = {
     {0x00026f,  "Senao     ", "Senao Wireless, access-point"}, /* access-point */
     {0x000278,  "Samsung   ", "Samsung Electro-Mechanics Co."},
@@ -178,26 +206,34 @@ struct Manufs xmanufs[] = {
 /**/{0x00BD3A,  "Nokia     ", "Nokia"},
     {0x00c0a8,  "GVC       ", "GVC Corporation, modem/fax/phone"},
     {0x041e64,  "Apple     ", "Apple"},
+    {0x08C5E1,  "Samsung   ", "Samsung Electromech Thailand"},
     {0x0c6076,  "Foxconn   ", "Hon Hai Precision, Windows Notebook"}, /*[00:24:2b:70:86:78] station: WinXP notebook */	
 /**/{0x0CDDEF,  "Nokia     ", "Nokia"},
     {0x0CEEE6,  "Foxconn   ", "Hon Hai Precision"},
     {0x1c4bd6,  "AzureWave ", "AzureWave Technologies"},
+    {0x28FF3C,  "Apple     ", "Apple"},
     {0x2C8158,  "Foxconn   ", "Hon Hai Precision"},
     {0x2ca835,  "BLACKBERRY", "Research In Motion"},
     {0x307c30,  "BLACKBERRY", "Research In Motion"},
     {0x34159e,  "Apple     ", "Apple"},
 /**/{0x347e39,  "Nokia     ", "Nokia"},
+    {0x3871DE,  "Apple     ", "Apple"},
+    {0x38892C,  "Apple     ", "Apple"},
     {0x38E7D8,  "Htc       ", "HTC Corporation"},
 /**/{0x3CF72A,  "Nokia     ", "Nokia"},
  
     {0x40d32d,  "Apple     ", "Apple"},
+    {0x449160,  "Murata    ", "Murata"},
+    {0x4CDD31,  "Samsung   ", "Samsung"},
     {0x506313,  "Foxconn   ", "Hon Hai Precision"},
     {0x58B035,  "Apple     ", "Apple"},
 /**/{0x5C57C8,  "Nokia     ", "Nokia"},
     {0x5C5948,  "Apple     ", "Apple"},
     {0x60334B,  "Apple     ", "Apple"},
     {0x60fb42,  "Apple     ", "Apple"},
+    {0x645AED,  "Apple     ", "Apple"},
     {0x64b9e8,  "Apple     ", "Apple"},
+    {0x68EF43,  "Apple     ", "Apple"},
     {0x701a04,  "Lite-On   ", "Lite-On Computer Corporation"},
     {0x70f104,  "Lite-On   ", "Lite-On Computer Corporation"},
     {0x70f1a1,  "Lite-On   ", "Lite-On Computer Corporation"},
@@ -206,16 +242,19 @@ struct Manufs xmanufs[] = {
     {0x7CC537,  "Apple     ", "Apple"},
     {0x78DD08,  "Foxconn   ", "Hon Hai Precision, Windows Notebook"},
 /**/{0x80501B,  "Nokia     ", "Nokia"},
+    {0x881908,  "Apple     ", "Apple"},
     {0x9027E4,  "Apple     ", "Apple"},
     {0x904CE5,  "Foxconn   ", "Hon Hai Precision"},
 
     {0x90840D,  "Apple     ", "Apple"},
     {0x9068c3,  "Motorola  ", "Motorola"}, /* Motorola */
     {0x9268c3,  "(Android) ", "(Android)"}, /* Motorola */
+    {0x98CA33,  "Apple     ", "Apple"},
     {0x9ce635,  "Nintendo  ", "Nintendo"},
     {0x9ee635,  "Nintendo  ", "Nintendo"},
 /**/{0xA04E04,  "Nokia     ", "Nokia"},
     {0xA4ED4E,  "MotorolaPH", "Motorola Mobile Devices"},
+    {0xA46CF1,  "Samsung   ", "Samsung"},
 /**/{0xA87B39,  "Nokia     ", "Nokia"},
     {0xb482fe,  "Askey     ", "Askey Computer Corp"},
 /**/{0xC038F9,  "Nokia     ", "Nokia"},
@@ -223,6 +262,9 @@ struct Manufs xmanufs[] = {
     {0xC417FE,  "Foxconn   ", "Hon Hai Precision"},
     {0xC44619,  "Foxconn   ", "Hon Hai Precision, Windows Notebook"},
     {0xC83A35,  "Tenda     ", "Tenda Technology Co., Ltd."},
+    {0xD0C5F3,  "Apple     ", "Apple"},
+    {0xd46d6d,  "Intel     ", "Intel Corporate"},
+    {0xD4909C,  "Apple     ", "Apple"},
     {0xd49a20,  "Apple     ", "Apple"},
     {0xD83062,  "Apple     ", "Apple"},
 /**/{0xD87533,  "Nokia     ", "Nokia"},
@@ -514,6 +556,7 @@ struct Changes {
 	{"Apple Inc",	"Apple     "},
 	{"Apple, Inc.", "Apple     "},
 	{"Apple, Inc",	"Apple     "},
+    {"Apple\tAppl", "Apple     "},
 
 	{"Agere Syste", "Agere     "},
 	{"ALLIED TELE", "Allied Tele"},
@@ -557,10 +600,12 @@ struct Changes {
 
 	{"Huawei Devi", "Huawei    "},
 	{"HUAWEI TECH", "Huawei    "},
+    {"HuaweiTe\tH", "Huawei    "},
 
 	{"IntelCorpo",	"Intel     "},
 	{"Intel Corpo", "Intel     "},
 	{"Intel Corp",	"Intel     "},
+    {"IntelCor\tI", "Intel     "},
 
 	{"KYOCERA COR", "Kyocera   "},
 	{"LiteonTech",	"Lite-On   "},
@@ -570,9 +615,11 @@ struct Changes {
 	{"LG Innotek",  "LG        "},
 	{"LG Innotek ", "LG        "},
 	{"LG Electron", "LG        "},
+    {"LgElectr\tL", "LG        "},
 	{"Microsoft C", "Microsoft "},
 	{"Microsoft M", "Microsoft "},
 	{"Motorola Mo", "Motorola  "},
+    {"Motorola\tM", "Motorola  "},
 	{"Murata Manu", "Murata    "},
 
 	{"NokiaDanma",	"Nokia     "},
@@ -599,7 +646,9 @@ struct Changes {
 	{"ResearchIn",	"BLACKBERRY"},
 	{"RIM",			"BLACKBERRY"},
 	{"Research In", "BLACKBERRY"},
+    {"Raspberry P", "RaspberryPi"},
 
+    {"SamsungE\tS", "Samsun    "},
 	{"SHARP CORPO", "Sharp #   "},
 	{"SHARP Corpo", "Sharp #   "},
 
@@ -611,7 +660,8 @@ struct Changes {
 
 	{"SamsungEle",	"Samsung   "},
 	{"SAMSUNG ELE", "Samsung   "},
-	{"Samsung Ele", "Samsung   "},
+    {"Samsung Ele", "Samsung   "},
+    {"Samsun",      "Samsung   "},
 
 	{"Sony Ericss",	"SonyEricsn"},
 	{"Sony Comput", "Sony      "},
@@ -620,6 +670,8 @@ struct Changes {
 	{"hp        ",	"-hp-      "},
 	{"HP        ",	"-hp-      "},
 	{"Hewlett Pac", "-hp-      "},
+    
+    {"Xiaomi Comm", "Xiami     "},
 	{"zte corpora", "ZTE       "},
 	{0,0}
 };

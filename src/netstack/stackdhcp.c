@@ -14,7 +14,7 @@
 	- hostname
 */
 #include "netframe.h"
-#include "squirrel.h"
+#include "../squirrel.h"
 #include "formats.h"
 #include "mystring.h"
 #include <string.h>
