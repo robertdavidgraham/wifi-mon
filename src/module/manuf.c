@@ -478,7 +478,7 @@ static void manufs_load_from_oui_file(const char *filename)
  * Load IEEE OUI manufacturer IDs from a file, which is "manuf" located
  * in the current working directory.
  */
-static void 
+void 
 manufs_load_from_file()
 {
     unsigned i;

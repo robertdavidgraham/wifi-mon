@@ -7,6 +7,7 @@
 #include "../sqdb/sqdb.h"
 #include "stackwep.h"
 #include "../module/crypto-fnv1a.h"
+#include "../sift.h"
 
 //#include "val2string.h"	/* for translating OUIs */
 
@@ -986,12 +987,21 @@ void squirrel_wifi_mgmt_action(struct Squirrel *squirrel, struct NetFrame *frame
 	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
 
 	action_type = px[24];
+    SIFT_UNSIGNED("wifi.action.type", action_type);
 	switch (action_type) {
-	case 0x03: /* Category code = Block ACK */
-		/* Ref: wifi-2009-02-09.pcap(14379) */
-		break;
-	default:
-		FRAMERR(frame, "wifi.data: unknown action category code: 0x%04x\n", action_type);
+        case 0x03: /* Category code = Block ACK */
+            /* Ref: wifi-2009-02-09.pcap(14379) */
+            break;
+        case 0x05: /* Radio Measurement */
+            break;
+        case 0x07: /* HT/802.11n */
+            break;
+        case 0x15: /* VHT/802.11ac */
+            break;
+        case 0x7F: /* vendor specific */
+            break;
+        default:
+            FRAMERR(frame, "wifi.data: unknown action category code: 0x%04x\n", action_type);
 	}
 
 	if (memcmp(frame->src_mac, frame->bss_mac, 6) != 0) {
@@ -1281,7 +1291,7 @@ void squirrel_wifi_ctrl_frame(struct Squirrel *squirrel, struct NetFrame *frame,
 		if (bssid)
 			regmac_station_ctrl(squirrel->sqdb, bssid, receiver, DIR_BASE_TO_STA);
 		else
-			FRAMERR(frame, "unknown bssid\n");
+            ;//FRAMERR(frame, "unknown bssid\n");
 		break;
 	case STATION_TYPE_STA:
 		substation_mac = transmitter;
@@ -1290,7 +1300,7 @@ void squirrel_wifi_ctrl_frame(struct Squirrel *squirrel, struct NetFrame *frame,
 		if (bssid)
 			regmac_station_ctrl(squirrel->sqdb, bssid, transmitter, DIR_STA_TO_BASE);
 		else
-			FRAMERR(frame, "unknown bssid\n");
+            ;//FRAMERR(frame, "unknown bssid\n");
 		break;
 	}
 }
@@ -1543,7 +1553,7 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct NetFrame *frame, const
             /* Regress: adhoc00166f946afd.pcap(35) */
 			regmac_station_data(squirrel->sqdb, frame->bss_mac, frame->src_mac, DIR_STA_TO_BASE);
         } else
-			FRAMERR(frame, "unknown\n");
+            ; //FRAMERR(frame, "unknown\n");
 		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
 		break;
 	case 2:
@@ -1628,6 +1638,7 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct NetFrame *frame, const
 	oui = ex24be(px+offset);
 
 	/* Look for OUI code */
+    SIFT_UNSIGNED("sap.oui", oui);
 	switch (oui){
 	case 0x000000:
 		/* fall through below */
@@ -1656,7 +1667,7 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct NetFrame *frame, const
 	case 0x00601d: /* Lucent */
 		return;
 	default:
-		FRAMERR(frame, "Unknown SAP OUI: 0x%06x\n", oui);
+		//FRAMERR(frame, "Unknown SAP OUI: 0x%06x\n", oui);
 		return;
 	}
 	offset +=3;
@@ -1806,6 +1817,7 @@ squirrel_wifi_frame(struct Squirrel *squirrel,
 		squirrel_wifi_beacon(squirrel, frame, px, length);
 		break;
 	case XX(0,0xD): /* MGMT - Action */
+    case XX(0,0xe): /* MGMT - Action No Ack */
 		squirrel_wifi_mgmt_action(squirrel, frame, px, length);
 		break;
 	case XX(0,0x9): /* MGMT - Announcement traffic indication message (ATIM) */
@@ -1820,6 +1832,7 @@ squirrel_wifi_frame(struct Squirrel *squirrel,
 	case XX(0,0xc): /* MGMT - Deauthentication Request */
 		squirrel_wifi_deauthentication(squirrel, frame, px, length);
 		break;
+            
 
 	case XX(2,0x0): /* Data */
 	case XX(2,0x4): /* Data (NULL function) */
@@ -1827,6 +1840,11 @@ squirrel_wifi_frame(struct Squirrel *squirrel,
 	case XX(2,0xc): /* Data (QoS, NULL function) */
 		squirrel_wifi_data(squirrel, frame, px, length);
 		break;
+        case XX(1, 0x05):
+            break;
+           
+    case XX(1,0x4): /* Beam forming report */
+        break;
 	case XX(1,0xa): /* CTRL - Power Save Poll */
 		/* REF: sniff-2009-02-09-127.pcap(231303) */
 		squirrel_wifi_ctrl_power_save_poll(squirrel, frame, px, length);

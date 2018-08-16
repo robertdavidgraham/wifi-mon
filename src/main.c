@@ -284,6 +284,26 @@ ferret_filter_mac(struct Squirrel *squirrel, const unsigned char *mac_addr)
 	return 0;
 }
 
+int wifi_frequency_to_channel(int frequency)
+{
+    /* 2.4 GHz 802.11b/g/n */
+    if (2402 <= frequency && frequency <= 2472) {
+        return 1 + ((frequency - 2412) / 5);
+    } else if (frequency == 2484) {
+        return 14; /* Japan */
+    } else if (5150 <= frequency && frequency <= 5350) {
+        /* U-NII-1 = 5150 - 5250 max 50 mW */
+        /* U-NII-2 = 5250 - 5350 max 250 mW */
+        return 30 + ((frequency - 5150) / 5 );
+    } else if (5470 <= frequency && frequency <= 5720) {
+        /* U-NII-2e =  */
+        return 94 + ((frequency - 5470) / 5 );
+    } else if (5720 <= frequency && frequency <= 5865) {
+        /* U-NII-2e =  */
+        return 144 + ((frequency - 5720) / 5 );
+    } else
+        return -1;
+}
 
 void
 squirrel_frame(struct Squirrel *squirrel,
@@ -401,24 +421,9 @@ squirrel_frame(struct Squirrel *squirrel,
             }
 			if (features & 0x000004) offset += 1;	/* Rate */	
             if (features & 0x000008 && offset+2<header_length) {
-                unsigned channel_frequency = ex16le(px+offset);
-                unsigned channel = 0;
-                switch (channel_frequency) {
-                case 2412: channel = 1; break;
-                case 2417: channel = 2; break;
-                case 2422: channel = 3; break;
-                case 2427: channel = 4; break;
-                case 2432: channel = 5; break;
-                case 2437: channel = 6; break;
-                case 2442: channel = 7; break;
-                case 2447: channel = 8; break;
-                case 2452: channel = 9; break;
-                case 2457: channel =10; break;
-                case 2462: channel =11; break;
-                case 2467: channel =12; break;
-                case 2472: channel =13; break;
-                case 2477: channel =14; break;
-                }
+                unsigned frequency = ex16le(px+offset);
+                int channel;
+                channel = wifi_frequency_to_channel(frequency);
                 squirrel->sqdb->kludge.channel = channel;
                 offset += 2;	
             }
@@ -721,7 +726,7 @@ static unsigned filtered_out(struct NetFrame *frame, const char *mac_address)
 int process_file(struct Squirrel *squirrel, const char *capfilename)
 {
 	struct PcapFile *capfile;
-	unsigned char buf[2048];
+	unsigned char buf[65536];
 	unsigned linktype;
 	unsigned frame_number = 0;
 	clock_t last_time = clock();
@@ -742,7 +747,7 @@ int process_file(struct Squirrel *squirrel, const char *capfilename)
 	/*
 	 * Read in all the packets
 	 */
-	for (;;) {
+	while (!control_c_pressed) {
 		struct NetFrame frame[1];
 		unsigned x;
 
@@ -781,9 +786,6 @@ int process_file(struct Squirrel *squirrel, const char *capfilename)
 		if (x == 0)
 			break;
 
-		/* Clear the flag. This will be set if the processing finds something
-		 * interesting. At that point, we might want to save a copy of the 
-		 * frame in a 'sift' file. */
 		frame->filename = capfilename;
 		frame->layer2_protocol = linktype;
 		frame->frame_number = ++frame_number;
@@ -1707,23 +1709,26 @@ void launch_thread(struct Squirrel *squirrel, const char *adapter_name)
 		fprintf(stderr, "Thread started\n");
 }
 
-/**
- * This is the main entry point to the program
- */
-#ifndef FERRET_MAIN
-#define FERRET_MAIN main
-#endif
+
 /*
 int main(int argc, char **argv)
 */
-int FERRET_MAIN(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	int i;
 	struct Squirrel *squirrel;
 
-	fprintf(stderr, "-- SQUIRREL 1.0 - 2008 (c) Errata Security\n");
+	fprintf(stderr, "-- wifi-mon 1.2 - 2008-2018 (c) Robert Graham\n");
 	fprintf(stderr, "-- build = %s %s (%u-bits)\n", __DATE__, __TIME__, (unsigned)sizeof(size_t)*8);
 
+    /*
+     * Load manufacturer IDs
+     */
+    {
+        extern void manufs_load_from_file(void);
+        manufs_load_from_file();
+    }
+    
 	/*
 	 * Register a signal handler for the <ctrl-c> key. This allows
 	 * files to be closed gracefully when exiting. Otherwise, the
@@ -1770,8 +1775,8 @@ int FERRET_MAIN(int argc, char **argv)
 	 */
 	if (argc <= 1) {
 		fprintf(stderr,"Usage:\n");
-		fprintf(stderr," squirrel -w <file> -r <file1> <file2> ...   (where <files> contain captured packets)\n");
-		fprintf(stderr," squirrel -h						 (for more help)\n");
+		fprintf(stderr," wifi-mon -w <file> -r <file1> <file2> ...   (where <files> contain captured packets)\n");
+		fprintf(stderr," wifi-mon -h						 (for more help)\n");
 		return 0;
 	}
 

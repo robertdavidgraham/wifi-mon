@@ -3589,7 +3589,7 @@ process_new_connection(struct mg_connection *conn)
 	struct mg_request_info *ri = &conn->request_info;
 	char	buf[MAX_REQUEST_SIZE];
 	int	request_len, nread;
-    fprintf(stderr, "[open connection]\n"); fflush(stderr);
+    //fprintf(stderr, "[open connection]\n"); fflush(stderr);
 
 	nread = 0;
 	do {
@@ -3634,7 +3634,7 @@ process_new_connection(struct mg_connection *conn)
 
 	} while (conn->keep_alive);
 
-    fprintf(stderr, "[close connection]\n"); fflush(stderr);
+    //fprintf(stderr, "[close connection]\n"); fflush(stderr);
 	close_connection(conn);
 }
 

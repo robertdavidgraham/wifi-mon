@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "sprintf_s.h"
+#include "../sift.h"
 
 struct DHCP {
 	unsigned op;
@@ -325,6 +326,8 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 			else {
 				const char *system = 0;
 
+                SIFT_STRING("dhcp.vendor.class.id", px+offset, len);
+                
 				if (MATCHES("MSFT 5.0", px+offset, len)) {
 					system = "WinXP";
 				} else if (MATCHES("MSFT 7.0", px+offset, len)) {
@@ -334,18 +337,13 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 				} else if (MATCHES("BlackBerry", px+offset, len)) {
 					/* REF: sniff-2009-02-09-127.pcap(231297) */
 					system = "BlackBerry";
-				} else if (len > 8 && memcmp(px+offset, "dhcpcd 4", 8) == 0) {
-					system = "Linux";
+                } else if (len > 8 && memcmp(px+offset, "dhcpcd 4", 8) == 0) {
+                    system = "Linux";
+                } else if (len > 8 && memcmp(px+offset, "android-", 8) == 0) {
+                    system = "Android";
 				} else {
-					/*
-					JOTDOWN(squirrel,
-						JOT_MACADDR("ID-MAC", dhcp->chaddr),
-						JOT_SZ("proto","DHCP"),
-						JOT_SZ("op","Vendor-ID"),
-						JOT_PRINT("vendor",	 	px+offset,	len),
-						0);*/
+                    system = 0;
 					FRAMERR(frame, "%s: %s\n", "dhcp", "fixme");
-
 				}
 				switch (dhcp->op) {
 				case 1:
