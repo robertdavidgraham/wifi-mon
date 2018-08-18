@@ -100,7 +100,7 @@ table.bssids2 td.inactive			{font-weight: normal;}
 table.bssids2 td.active				{font-weight: bold;}
 
 
-table.bssids {
+table.sortable {
 	border-width: 1px 1px 1px 1px;
 	border-spacing: 0px;
 	border-style: solid solid solid solid;
@@ -109,7 +109,7 @@ table.bssids {
 	background-color: #d6d6d6;
     font:12px/12px arial;
 }
-table.bssids th {
+table.sortable th {
 	background-image:url('img/menubg.png');
     padding: 4px 6px; 
     min-width:1px; 
@@ -118,7 +118,7 @@ table.bssids th {
 	font-weight: bold;
 	border-collapse: collapse;
 }
-table.bssids td {
+table.sortable td {
 	border-width: 1px 1px 1px 1px;
 	padding: 3px 4px 3px 3px;
 	border-style: solid solid solid solid;
@@ -127,37 +127,37 @@ table.bssids td {
 }
 
 
-table.bssids tr:nth-child(odd)	{background-color: #efefef;}
-table.bssids tr:nth-child(even) {background-color: white;}
-table.bssids tr:nth-child(odd).active	{background-color: #ffdddd;}
-table.bssids tr:nth-child(even).active {background-color: #ffeeee;}
+table.sortable tr:nth-child(odd)	{background-color: #efefef;}
+table.sortable tr:nth-child(even) {background-color: white;}
+table.sortable tr:nth-child(odd).active	{background-color: #ffdddd;}
+table.sortable tr:nth-child(even).active {background-color: #ffeeee;}
 
-table.bssids td:first-child		{font: 12px/12px monospace;}
-table.bssids td.stacount		{text-align: center;}
-table.bssids td.power			{text-align: right;}
-table.bssids td.beacons			{text-align: right;}
-table.bssids td.datapackets		{text-align: right;}
-table.bssids td.channels		{text-align: center;}
-table.bssids td.speed			{text-align: center;}
-table.bssids td.encryption		{text-align: center;}
-table.bssids td.cipher			{text-align: center;}
-table.bssids td.auth			{text-align: center;}
+table.sortable td:first-child		{font: 12px/12px monospace;}
+table.sortable td.stacount		{text-align: center;}
+table.sortable td.power			{text-align: right;}
+table.sortable td.beacons			{text-align: right;}
+table.sortable td.datapackets		{text-align: right;}
+table.sortable td.channels		{text-align: center;}
+table.sortable td.speed			{text-align: center;}
+table.sortable td.encryption		{text-align: center;}
+table.sortable td.cipher			{text-align: center;}
+table.sortable td.auth			{text-align: center;}
 
 
-table.bssids td.index {
+table.sortable td.index {
         font-family: lucida console, monospace;
         text-align: center;
 }
-table.bssids td.index a:focus {
+table.sortable td.index a:focus {
         font-family: lucida console, monospace;
 		background-color: #ddd;
 }
 
-table.bssids td.station {
+table.sortable td.station {
         font-family: lucida console, monospace;
         font-size: x-small;
 }
-table.bssids td.station a:focus {
+table.sortable td.station a:focus {
         font-family: lucida console, monospace;
         font-size: small;
 		font-weight: bold;

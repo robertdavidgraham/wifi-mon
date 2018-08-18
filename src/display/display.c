@@ -24,6 +24,7 @@ display_report_title(struct mg_connection *c, const char *title, const char *ref
 	X(c," <link rel=\"stylesheet\" type=\"text/css\" href=\"squirrel.css\" />\n");
 	X(c," <link rel=\"Shortcut Icon\" href=\"favicon.ico\" type=\"image/x-icon\">\n");
 	X(c," <script type=\"text/javascript\" src=\"squirrel.js\"></script>\n");
+    X(c, "<script src=\"sorttable.js\"></script>\n");
 	X(c,"</head>\n");
 	X(c,"<body onLoad=\"setInterval(%s,1000)\">\n", refresh);
 
@@ -70,21 +71,25 @@ display_topmenu(struct mg_connection *c, const struct mg_request_info *ri, void 
 			"</tr>\n"
 			"</table>\n");
 }
-const char *format_unsigned(unsigned num, char *buf, unsigned buf_size)
+
+const char *
+format_unsigned(unsigned long long num, char *buf, unsigned buf_size)
 {
 	if (num == 0)
 		return "";
 	else {
-		sprintf_s(buf, buf_size, "%u", num);
+		sprintf_s(buf, buf_size, "%llu", num);
 		return buf;
 	}
 }
-const char *format_signed(unsigned num, char *buf, unsigned buf_size)
+
+const char *
+format_signed(long long num, char *buf, unsigned buf_size)
 {
 	if (num == 0)
 		return "";
 	else {
-		sprintf_s(buf, buf_size, "%d", num);
+		sprintf_s(buf, buf_size, "%lld", num);
 		return buf;
 	}
 }

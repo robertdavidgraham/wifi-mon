@@ -15,12 +15,12 @@ PIXIE_FUNCTION pixie_get_proc_symbol(void *library, const char *symbol);
 void pixie_sleep(unsigned milliseconds);
 void pixie_delete_critical_section(void *cs);
 void pixie_close_thread(ptrdiff_t thread_handle);
-void pixie_end_thread();
+void pixie_end_thread(void);
 ptrdiff_t pixie_begin_thread(void (*worker_thread)(void*), unsigned flags, void *worker_data);
-void *pixie_initialize_critical_section();
+void *pixie_initialize_critical_section(void);
 void pixie_leave_critical_section(void *cs);
 void pixie_enter_critical_section(void *cs);
-void pixie_lower_thread_priority();
+void pixie_lower_thread_priority(void);
 
 /**
  * Retrieve the 6-byte MAC address of the local computer. This is

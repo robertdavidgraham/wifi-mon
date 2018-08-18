@@ -1735,7 +1735,8 @@ int main(int argc, char **argv)
 	 * last bit of data gets corrupted when the user hits <ctrl-c>
 	 */
 	signal(SIGINT, control_c_handler);
-    signal(SIGPIPE, sigpipe_handler);
+    signal(SIGPIPE, SIG_IGN);
+    //signal(SIGPIPE, sigpipe_handler);
     
     
 	/*

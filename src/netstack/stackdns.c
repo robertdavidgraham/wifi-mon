@@ -1019,7 +1019,7 @@ void squirrel_dns(struct Squirrel *squirrel, struct NetFrame *frame, const unsig
 			        frame->src_mac,
 			        frame->bss_mac,
 			        "ip",
-			        textip);
+			        textip, -1);
         }
     }
 

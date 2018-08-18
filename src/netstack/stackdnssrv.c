@@ -370,7 +370,7 @@ void dnssrv_parse_resource_record(struct Squirrel *squirrel, struct NetFrame *fr
 			        frame->src_mac,
 			        frame->bss_mac,
 			        "name",
-			        tmpname);
+			        tmpname, -1);
         }
 
 		break;

@@ -189,7 +189,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 									frame->src_mac,
 									frame->bss_mac,
 									"name",
-									hostname);
+									hostname, -1);
 					free(hostname);
 					break;
 				default:
@@ -218,7 +218,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 									frame->src_mac,
 									frame->bss_mac,
 									"domain",
-									domain);
+									domain, -1);
 					free(domain);
 					break;
 				case 2:
@@ -230,7 +230,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 									frame->dst_mac, /* server to client */
 									frame->bss_mac,
 									"domain",
-									domain);
+									domain, -1);
 					free(domain);
 					break;
 				default:
@@ -276,7 +276,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 									dhcp->chaddr,
 									frame->bss_mac,
 									"ip",
-									iptext);
+									iptext, -1);
                 }
                 break;            
 			case 1: /*discover*/
@@ -341,7 +341,9 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
                     system = "Linux";
                 } else if (len > 8 && memcmp(px+offset, "android-", 8) == 0) {
                     system = "Android";
-				} else {
+                } else if (len >= 12 && memcmp(px+offset, "dhcpcd-5.5.6", 12) == 0) {
+                    system = "Android";
+                } else {
                     system = 0;
 					FRAMERR(frame, "%s: %s\n", "dhcp", "fixme");
 				}
@@ -353,7 +355,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 										frame->src_mac,
 										frame->bss_mac,
 										"system",
-										system);
+										system, -1);
 					} else {
 						char *sys;
 						sys = (char*)malloc(len+1);
@@ -363,7 +365,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 										frame->src_mac,
 										frame->bss_mac,
 										"system",
-										sys);
+										sys, -1);
 						free(sys);
 					}
 					break;
@@ -425,7 +427,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 									frame->src_mac,
 									frame->bss_mac,
 									"ip",
-									ip_text);
+									ip_text, -1);
 					break;
 				default:
 					FRAMERR(frame, "%s: %s\n", "dhcp", "fixme");
@@ -487,7 +489,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct NetFrame *frame, con
 									frame->src_mac,
 									frame->bss_mac,
 									"name",
-									nametext);
+									nametext, -1);
 					//FRAMERR(frame, "%s: %s\n", "dhcp", "fixme");
 				}				
 				/*if (dhcp->op != 1)

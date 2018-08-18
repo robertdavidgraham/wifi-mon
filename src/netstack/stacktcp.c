@@ -4,6 +4,7 @@
 #include "../squirrel.h"
 #include "netframe.h"
 #include "formats.h"
+#include "../sift.h"
 #include "sprintf_s.h"
 #include <ctype.h>
 #include <string.h>
@@ -20,7 +21,7 @@
 #define false 0
 #endif
 
-typedef void *(*FERRET_PARSER)();
+typedef void *(*FERRET_PARSER)(void);
 
 enum {
 	TCP_FIN=1,
@@ -285,7 +286,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 					frame->src_mac,
 					frame->bss_mac,
 					"ip",
-					iptext);
+					iptext, -1);
 
     //User-Agent: CaptiveNetworkSupport/1.0 wispr
     if (find_string(px, length, "CaptiveNetworkSupport/1.0 wispr", 0)) {
@@ -293,12 +294,12 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						frame->src_mac,
 						frame->bss_mac,
 						"ip",
-						iptext);
+						iptext, -1);
         sqdb_add_info(	squirrel->sqdb, 
 						frame->src_mac,
 						frame->bss_mac,
 						"system",
-						"iPod");
+						"iPod", -1);
     }
 
     //User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727; .NET CLR 3.0.04506.30; .NET CLR 3.0.04506.648; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)
@@ -307,7 +308,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						frame->src_mac,
 						frame->bss_mac,
 						"system",
-						"WinXP");
+						"WinXP", -1);
     }
 
     //User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.3) Gecko/20091007 Ubuntu/9.10 (karmic) Firefox/3.5.3\r\n
@@ -317,7 +318,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						    frame->src_mac,
 						    frame->bss_mac,
 						    "cpu",
-						    "x86");
+						    "x86", -1);
 
             while (osver < length && isspace(px[osver]))
                 osver++;
@@ -330,7 +331,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						        frame->src_mac,
 						        frame->bss_mac,
 						        "lang",
-						        lang);
+						        lang, -1);
             }
 
         }
@@ -346,7 +347,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						    frame->src_mac,
 						    frame->bss_mac,
 						    "system",
-						    systemtext);
+						    systemtext, -1);
 
         }
     }
@@ -362,7 +363,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						        frame->src_mac,
 						        frame->bss_mac,
 						        "ip",
-						        iptext);
+						        iptext, -1);
 
                 ver_minor = next_integer(px, length, &osver);
                 if (px[osver] == '.' || px[osver] == '_')
@@ -373,7 +374,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						        frame->src_mac,
 						        frame->bss_mac,
 						        "system",
-						        systemtext);
+						        systemtext, -1);
 
             }
         }
@@ -391,7 +392,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						        frame->src_mac,
 						        frame->bss_mac,
 						        "ip",
-						        iptext);
+						        iptext, -1);
 
                 ver_major = next_integer(px, length, &osver);
                 ver_minor = next_integer(px, length, &osver);
@@ -402,7 +403,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct NetFrame *frame, 
 						        frame->src_mac,
 						        frame->bss_mac,
 						        "system",
-						        systemtext);
+						        systemtext, -1);
 
             }
         }
@@ -575,6 +576,7 @@ void squirrel_tcp(struct Squirrel *squirrel, struct NetFrame *frame, const unsig
 				break;
 			}
 
+            SIFT_UNSIGNED("tcp.option_kind", tag);
 			switch (tag) {
 			case 0x02: /* max seg size */
 				if (len != 4)
@@ -590,6 +592,8 @@ void squirrel_tcp(struct Squirrel *squirrel, struct NetFrame *frame, const unsig
 				break;
 			case 0x03: /*window scale*/
 				break;
+            case 0x1e: /* multipath TCP */
+                break;
 			default:
 				FRAMERR(frame, "tcp: unknown option=%d, length=%d\n", tag, len);
 			}

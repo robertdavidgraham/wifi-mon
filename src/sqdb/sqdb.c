@@ -966,13 +966,18 @@ unsigned MATCHESZ(const char *lhs, const char *rhs)
 
 void
 sqdb_add_info(struct SQDB *sqdb, const unsigned char *mac_address, const unsigned char *bssid,
-			  const char *name, const char *value)
+			  const char *name, const char *value, int in_length)
 {
 	struct SQDB_SubStation *sta;
 	struct NVPair **r_data;
 	struct NVPair *d;
 	size_t name_length = strlen(name);
-	size_t value_length = strlen(value);
+    size_t value_length;
+    
+    if (in_length == -1)
+        value_length = strlen(value);
+    else
+        value_length = in_length;
 
     if (bssid == 0)
         bssid = (const unsigned char*)"\0\0\0\0\0\0";

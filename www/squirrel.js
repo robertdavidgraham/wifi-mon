@@ -56,7 +56,8 @@ function refresh_probers()
 
 function refresh_bssid_item()
 {
-	refresh_xml(bssid_item_address + ".xml", handle_bssid_item);
+    var seenlast = document.getElementById("seenlast").getAttribute("value");
+	refresh_xml(bssid_item_address + ".xml?seenlast=" + seenlast, handle_bssid_item);
 }
 
 function update_table_cell(tableId, rowId, cellId, newValue)
@@ -64,6 +65,7 @@ function update_table_cell(tableId, rowId, cellId, newValue)
 	var table;
     var row;
 	var cell;
+    var oldValue = newValue;
     
 	/* Format the raw time into a JavaScript Date local string */
 	if (cellId == "seenfirst" || cellId == "seenlast") {
@@ -93,6 +95,8 @@ function update_table_cell(tableId, rowId, cellId, newValue)
 			return 0;
 		} else {
 			//cell.className = "active";
+            if (cellId == "seenfirst" || cellId == "seenlast")
+                cell.setAttribute("value", oldValue);
 			cell.innerHTML = newValue;
 			return 1;
 		}

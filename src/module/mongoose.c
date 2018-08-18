@@ -1028,7 +1028,7 @@ push(int fd, SOCKET sock, SSL *ssl, const char *buf, uint64_t len)
 		}
 
 		if (n < 0) {
-			cry("%s: %s", __func__, strerror(ERRNO));
+			//cry("%s: %s", __func__, strerror(ERRNO));
 			break;
 		} else {
 			sent += n;

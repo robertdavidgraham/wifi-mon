@@ -6,6 +6,7 @@
 #include "manuf.h"
 #include "display.h"
 #include "sprintf_s.h"
+#include <stdlib.h>
 
 #if 0
 static bool has_name(struct NVPair *nv, const char *name)
@@ -63,6 +64,8 @@ xml_bssid_item(struct mg_connection *c, const struct mg_request_info *ri, void *
 	struct SQDB_AccessPoint *ap;
 	struct SQDB_SubStation *sta;
 	char buf[64];
+    char *seenlast_str;
+    time_t seenlast = 0;
 
 	pixie_enter_critical_section(sqdb->cs);
 
@@ -70,6 +73,15 @@ xml_bssid_item(struct mg_connection *c, const struct mg_request_info *ri, void *
 		mg_printf(c, "404 Not Found\r\nConnection: closed\r\n\r\n");
 		goto _return;
 	}
+    
+    /*
+     * Get the last time, to only grab the latest changes
+     */
+    seenlast_str = mg_get_var(c, "seenlast");
+    if (seenlast_str) {
+        printf("seenlast = %s\n", seenlast_str);
+        seenlast = atoi(seenlast_str);
+    }
 
 	/*
 	 * Lookup this BSSID entry
@@ -137,6 +149,9 @@ xml_bssid_item(struct mg_connection *c, const struct mg_request_info *ri, void *
 	/* Station list */
 	X(c, " <stationlist>\n");
 	for (sta = ap->substations; sta; sta = sta->next) {
+        /* Skip entries that haven't changed */
+        if (sta->last < seenlast)
+            continue;
 		X(c, " <station id=\"%02x%02x%02x%02x%02x%02x\">\n",
 						sta->mac_address[0],sta->mac_address[1],sta->mac_address[2],
 						sta->mac_address[3],sta->mac_address[4],sta->mac_address[5]
@@ -241,7 +256,7 @@ bssid_value(struct mg_connection *c, const char *name, struct SQDB_AccessPoint *
     case VAL('L','A','S','T'): /* LAST timestamp */
         mytm = localtime(&ap->last);
         strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S %z", mytm);
-	    X(c, "<th>Last Seen</th><td id=\"seenlast\">%s</td>", timestr);
+	    X(c, "<th>Last Seen</th><td id=\"seenlast\" value=\"%u\">%s</td>", ap->last, timestr);
         break;
     case VAL('M','A','C','\0'): /* MAC address */
 	    X(c, "<th>MAC:</th><td id=\"mac\">");
@@ -342,6 +357,7 @@ display_bssid_item(struct mg_connection *c, const struct mg_request_info *ri, vo
 	X(c," <link rel=\"Shortcut Icon\" href=\"../favicon.ico\" type=\"image/x-icon\">\n");
 	X(c," <script type=\"text/javascript\" src=\"../squirrel.js\"></script>\n");
 	X(c, "<script type=\"text/javascript\">var bssid_item_address = '%s';</script>\n", bssidstr);
+    X(c, "<script src=\"../sorttable.js\"></script>\n");
 	X(c,"</head>\n");
 	X(c,"<body onLoad=\"setInterval(refresh_bssid_item,1000)\">\n");
 
@@ -376,7 +392,7 @@ display_bssid_item(struct mg_connection *c, const struct mg_request_info *ri, vo
 
 	X(c, "<p />\n");
 
-		X(c, "<table id=\"stationlist\" class=\"stations\">\n");
+		X(c, "<table id=\"stationlist\" class=\"sortable\">\n");
 		X(c,	"<tr>\n"
 				" <th>MAC</th>\n"
 				" <th>MANUF</th>\n"

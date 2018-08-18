@@ -144,7 +144,7 @@ void bonjour_parse_resource_record(struct Squirrel *squirrel, struct NetFrame *f
 			            frame->src_mac,
 			            frame->bss_mac,
 			            "system",
-			            "iPhone");
+			            "iPhone", -1);
                 if (strlen(tmpname) > 6) {
                     tmpname[strlen(tmpname)-6] = '\0';
                     while (tmpname[0] && ispunct(tmpname[strlen(tmpname)-1]))
@@ -156,7 +156,7 @@ void bonjour_parse_resource_record(struct Squirrel *squirrel, struct NetFrame *f
 			        frame->src_mac,
 			        frame->bss_mac,
 			        "name",
-			        tmpname);
+			        tmpname, -1);
 
 
             /* Try to save the IP address */
@@ -173,7 +173,7 @@ void bonjour_parse_resource_record(struct Squirrel *squirrel, struct NetFrame *f
 			                frame->src_mac,
 			                frame->bss_mac,
 			                "ip",
-			                textip);
+			                textip, -1);
 
                 }
             }

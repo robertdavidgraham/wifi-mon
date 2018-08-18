@@ -106,6 +106,7 @@ display_probers_list(struct mg_connection *c, const struct mg_request_info *ri, 
 	X(c," <link rel=\"stylesheet\" type=\"text/css\" href=\"squirrel.css\" />\n");
 	X(c," <link rel=\"Shortcut Icon\" href=\"/favicon.ico\" type=\"image/x-icon\">\n");
 	X(c," <script type=\"text/javascript\" src=\"squirrel.js\"></script>\n");
+    X(c," <script src=\"sorttable.js\"></script>\n");
 	X(c,"</head>\n");
 	X(c,"<body onLoad=\"setInterval(refresh_probers,1000)\">\n");
 
@@ -114,12 +115,12 @@ display_probers_list(struct mg_connection *c, const struct mg_request_info *ri, 
 	X(c, "<button onclick='self.setInterval(refresh,1000)'>Auto</button>\n");*/
 	display_topmenu(c, ri, user_data, 0);
 
-	X(c, "<table class=\"probers\" id=\"probers\">\n");
+	X(c, "<table class=\"sortable\" id=\"probers\">\n");
 	X(c,	"<tr>\n <th>MAC</th>\n"
-			" <th id=\"menu_manuf\" class=\"menu\" onClick=\"do_menu(this)\">MANUF</th>\n"
-			" <th onClick=\"do_menu(this)\">PWR</th>\n"
+			" <th id=\"menu_manuf\" class=\"menu\">MANUF</th>\n"
+			" <th>PWR</th>\n"
 			" <th>Count</th>\n"
-			" <th>Last</th>\n"
+			" <th>----- Last Activity -----</th>\n"
 			" <th>ESSID</th>\n"
 			"</tr>\n");
     for (i=0; i<list_count; i++) {

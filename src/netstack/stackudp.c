@@ -195,12 +195,12 @@ void squirrel_udp(struct Squirrel *squirrel, struct NetFrame *frame, const unsig
 							    frame->src_mac,
 							    frame->bss_mac,
 							    "ip",
-							    iptext);
+							    iptext, -1);
 			    sqdb_add_info(	squirrel->sqdb, 
 							    frame->src_mac,
 							    frame->bss_mac,
 							    "system",
-							    "MacOS");
+							    "MacOS", -1);
             }
 			break;
 		default:

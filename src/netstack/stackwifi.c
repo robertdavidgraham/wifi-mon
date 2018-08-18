@@ -976,7 +976,7 @@ void squirrel_wifi_mgmt_action(struct Squirrel *squirrel, struct NetFrame *frame
 	/* VALIDATE: proper direction field */
 	direction = px[1]&3;
 	if (direction != 0) {
-		FRAMERR(frame, "unknown direction %d\n", direction);
+        ;//FRAMERR(frame, "unknown direction %d\n", direction);
 		return;
 	}
 
@@ -987,7 +987,7 @@ void squirrel_wifi_mgmt_action(struct Squirrel *squirrel, struct NetFrame *frame
 	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
 
 	action_type = px[24];
-    SIFT_UNSIGNED("wifi.action.type", action_type);
+    SIFT_UNSIGNED("wlan.fixed.category_code", action_type);
 	switch (action_type) {
         case 0x03: /* Category code = Block ACK */
             /* Ref: wifi-2009-02-09.pcap(14379) */
@@ -995,6 +995,8 @@ void squirrel_wifi_mgmt_action(struct Squirrel *squirrel, struct NetFrame *frame
         case 0x05: /* Radio Measurement */
             break;
         case 0x07: /* HT/802.11n */
+            break;
+        case 0x0a: /* WNM/802.11v */
             break;
         case 0x15: /* VHT/802.11ac */
             break;
@@ -1067,6 +1069,7 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct NetFrame *
     }
 
 	reason = ex16le(px+24);
+    SIFT_UNSIGNED("wifi.deauth.reason", reason);
 	switch (reason) {
 	case 0x0001: /* Unspecified reason */
 		/* REF: sniff-2009-02-09-127.pcap(2912) */
@@ -1092,7 +1095,7 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct NetFrame *
 		if (dir == DIR_STA_TO_BASE)
 			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, dir);
         else
-			FRAMERR(frame, "deauth: unknow direction\n");
+            ; //FRAMERR(frame, "deauth: unknow direction\n");
 		break;
 	case 0x0004: /* Disassociated due to inactivity */
 		/* Sent from AP to STA telling it that it is being disconnected because it's inactive */
@@ -1107,12 +1110,14 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct NetFrame *
 		if (dir == DIR_BASE_TO_STA)
 			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, dir);
 		else
-			FRAMERR(frame, "deauth: unknow direction\n");
+            ;//FRAMERR(frame, "deauth: unknow direction\n");
 		break;
 	case 0x0007: /* ?? */
 		/* REF: wifi-2009-02-09.pcap(16481) */
 		/* These packets are confusing, they need more study */
 		break;
+    case 0x0009: /* Station requesting (re)association is not authenticated */
+        break;
 	case 0x000f: /* ?? */
 		/* REF: wifi-2009-02-09.pcap(379754) 
 		 * Deauthentication 4-way handshake timeout */
@@ -1122,7 +1127,7 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct NetFrame *
 			FRAMERR(frame, "deauth: unknow direction\n");
 		break;
 	default:
-		FRAMERR(frame, "wifi.data: unknown deauth reason: 0x%04x\n", reason);
+            ;//FRAMERR(frame, "wifi.data: unknown deauth reason: 0x%04x\n", reason);
 	}
 
 	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
@@ -1165,6 +1170,7 @@ void squirrel_wifi_disassociate(struct Squirrel *squirrel, struct NetFrame *fram
 	dir = regmac_base_resolve_direction(squirrel->sqdb, frame->bss_mac, frame->src_mac, frame->dst_mac);
 
 	reason = ex16le(px+24);
+    SIFT_UNSIGNED("wlan.fixed.reason_code", reason);
 	switch (reason) {
 	case 0x0008: /* Station leaving (or has left) ESSID/BSSID */
 		/* Sent from STA to AP telling it that it is about to leave the system 
@@ -1176,7 +1182,7 @@ void squirrel_wifi_disassociate(struct Squirrel *squirrel, struct NetFrame *fram
 		break;
 	case 0x0001: /* ??? */
 		/* REF: sniff-2009-02-10-127.pcap(1133074) */
-		FRAMERR(frame, "wifi.data: unknown deauth reason: 0x%04x\n", reason);
+        ; //FRAMERR(frame, "wifi.data: unknown deauth reason: 0x%04x\n", reason);
 		break;
 	default:
 		FRAMERR(frame, "wifi.data: unknown deauth reason: 0x%04x\n", reason);
@@ -1501,6 +1507,55 @@ unsigned test_wep_decrypt(
 	return 0;
 }
 
+/*
+ * Parse Link Layer Discovery Proocol
+ */
+void parse_lldp(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length)
+{
+    unsigned offset;
+    
+    for (offset = 0; offset < length; ) {
+        unsigned subtype;
+        unsigned sublen;
+        
+        if (offset + 2 > length)
+            break;
+        
+        subtype = px[offset]>>1;
+        sublen = ((px[offset]&1)<<8) | px[offset+1];
+        offset += 2;
+        
+        if (offset + sublen > length)
+            break;
+        
+        SIFT_UNSIGNED("lldp.tlv.type", subtype);
+        switch (subtype) {
+            case 1: /* Chasis ID */
+                if (sublen > 2) {
+                    sqdb_add_info(    squirrel->sqdb,
+                                  frame->src_mac,
+                                  frame->bss_mac,
+                                  "chasisid",
+                                  (const char *)px+offset+1, sublen-1);
+                    break;
+                }
+                break;
+            case 5: /* system name */
+                sqdb_add_info(    squirrel->sqdb,
+                              frame->src_mac,
+                              frame->bss_mac,
+                              "name",
+                              (const char *)px+offset, sublen);
+                
+                break;
+            default:
+                ;
+        }
+        
+        offset += sublen;
+    }
+}
+
 
 void squirrel_wifi_data(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length)
 {
@@ -1696,6 +1751,7 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct NetFrame *frame, const
 		break;
 	}
 
+    SIFT_UNSIGNED("llc.type", ethertype);
 	switch (ethertype) {
 	case 0x0006: /* ??? */
 		/* I saw this packet at Toorcon. I have no idea what it's doing, but I'm
@@ -1732,6 +1788,12 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct NetFrame *frame, const
 	case 0x888e: /*802.11x authentication*/
 		//squirrel_802_1x_auth(squirrel, frame, px+offset, length-offset);
 		break;
+    case 0x88cc: /* Link Layer Discovery Protocol */
+        parse_lldp(squirrel, frame, px+offset, length-offset);
+        break;
+    case 0x890d:
+        /* stuff like TDLS */
+        break;
 	default:
 		if (length-offset > 8 && ethertype <= length-offset && ethertype+10 >length-offset && memcmp(px+offset, "\xAA\xAA\x03\x08\x00\x07\x80\x9b", 8) == 0) {
 			offset += 8;
@@ -1832,6 +1894,9 @@ squirrel_wifi_frame(struct Squirrel *squirrel,
 	case XX(0,0xc): /* MGMT - Deauthentication Request */
 		squirrel_wifi_deauthentication(squirrel, frame, px, length);
 		break;
+            
+        case XX(0,0xf): /* MGMT */
+            break;
             
 
 	case XX(2,0x0): /* Data */

@@ -33,7 +33,7 @@ struct SQDB_String {
 	unsigned char value[48];
 };
 
-struct SQDB *sqdb_create();
+struct SQDB *sqdb_create(void);
 
 
 /**
@@ -69,7 +69,7 @@ unsigned sqdb_add_probe_request(
 
 void
 sqdb_add_info(struct SQDB *sqdb, const unsigned char *mac_address, const unsigned char *bssid,
-			  const char *name, const char *value);
+			  const char *name, const char *value, int in_length);
 
 
 

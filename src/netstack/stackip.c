@@ -144,6 +144,8 @@ void squirrel_ip(struct Squirrel *squirrel, struct NetFrame *frame, const unsign
 	case 41: /* IPv6 inside IPv4 */
 		//squirrel_ipv6(squirrel, frame, px+offset, length-offset);
 		break;
+    case 103: /* protocol independent multicasat */
+        break;
 	default:
 		FRAMERR(frame, "ip: unknown protocol=%d\n", ip.protocol);
 	}

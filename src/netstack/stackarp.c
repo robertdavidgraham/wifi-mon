@@ -116,7 +116,7 @@ void squirrel_arp(struct Squirrel *squirrel, struct NetFrame *frame, const unsig
 						mac_src,
 						frame->bss_mac,
 						"ip",
-						ip_text);
+						ip_text, -1);
         break;
     }
 

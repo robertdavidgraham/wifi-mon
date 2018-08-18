@@ -89,12 +89,11 @@ display_bssid_list(struct mg_connection *c, const struct mg_request_info *ri, vo
      */
     display_report_title(c, "Base Stations", "refresh", 0);
 
-	X(c, "<script src=\"sorttable.js\"></script>\n");
-    /* 
+	/*
      * Create the table header 
      */
-	X(c, "<table class=\"bssids\" id=\"bssidlist\">\n");
-	X(c,	"<tr>\n <th>BSSID</th>\n"
+	X(c, "<table class=\"sortable\" id=\"bssidlist\">\n");
+	X(c,	"<thead><tr>\n <th>BSSID</th>\n"
 			" <th>MANUF</th>\n"
 			" <th>#STA</th>\n"
 			" <th>PWR</th>\n"
@@ -107,7 +106,7 @@ display_bssid_list(struct mg_connection *c, const struct mg_request_info *ri, vo
 			" <th>AUTH</th>\n"
 			" <th>AdHoc</th>\n"
 			" <th>ESSID</th>\n"
-			"</tr>\n");
+			"</tr></thead>\n<tbody>\n");
 
     /*
      * Get a ordered list with most recent APs first
@@ -227,7 +226,7 @@ display_bssid_list(struct mg_connection *c, const struct mg_request_info *ri, vo
 		X(c, " </tr>\n");*/
 	}
     free(list);
-	X(c, "</table>\n");
+	X(c, "</tbody>\n</table>\n");
 
 	X(c,	"</body>\n"
 			"</html>\n"
