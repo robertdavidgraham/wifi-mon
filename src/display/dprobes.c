@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "manuf.h"
 #include "display.h"
+#include "../sqdb/sqdb.h"
 
 /**
  * Test this SSID to see if it looks like one that a station
@@ -79,6 +80,20 @@ void defang_ssid(char *defanged, size_t defanged_length, const char *ssid, unsig
     defanged[d] = '\0';
 }
 
+/*===========================================================================
+ *===========================================================================*/
+const char *
+standard_name(enum WiFiStandard standard)
+{
+    switch (standard) {
+        case WIFI_80211a: return "802.11a";
+        case WIFI_80211b: return "802.11b";
+        case WIFI_80211g: return "802.11g";
+        case WIFI_80211n: return "802.11n";
+        case WIFI_80211ac: return "802.11ac";
+        default: return "unknown";
+    }
+}
 
 /*===========================================================================
  *===========================================================================*/
@@ -118,6 +133,9 @@ display_probers_list(struct mg_connection *c, const struct mg_request_info *ri, 
 	X(c, "<table class=\"sortable\" id=\"probers\">\n");
 	X(c,	"<tr>\n <th>MAC</th>\n"
 			" <th id=\"menu_manuf\" class=\"menu\">MANUF</th>\n"
+            " <th>Hash</th>\n"
+            " <th>Type</th>\n"
+            " <th>Width</th>\n"
 			" <th>PWR</th>\n"
 			" <th>Count</th>\n"
 			" <th>----- Last Activity -----</th>\n"
@@ -142,7 +160,11 @@ display_probers_list(struct mg_connection *c, const struct mg_request_info *ri, 
 				mac_address[0],mac_address[1],mac_address[2],
 				mac_address[3],mac_address[4],mac_address[5]
 				);
-		X(c, "  <td id=\"manuf\" class=\"manuf\">%s</td>\n", manuf_from_mac(mac_address));
+        X(c, "  <td id=\"manuf\" class=\"manuf\">%s</td>\n", manuf_from_mac(mac_address));
+        
+        X(c, "  <td id=\"iehash\" class=\"iehash\">0x%08x</td>\n", sta->ie_hash);
+        X(c, "  <td id=\"standard\" class=\"standard\">%s</td>\n", standard_name(sta->standard));
+        X(c, "  <td id=\"channelwidth\" class=\"channelwidth\">%d MHz</td>\n", sta->channel_width);
 
 		
 		/*
@@ -260,6 +282,10 @@ xml_probers_list(struct mg_connection *c, const struct mg_request_info *ri, void
 				mac_address[3],mac_address[4],mac_address[5]
 				);
 		X(c, "  <manuf>%s</manuf>\n", manuf_from_mac(mac_address));
+
+        X(c, "  <iehash>0x%08x</iehash>\n", sta->ie_hash);
+        X(c, "  <standard>%s</standard>\n", standard_name(sta->standard));
+        X(c, "  <channelwidth>%d MHz</channelwidth>\n", sta->channel_width);
 
 
 		/*

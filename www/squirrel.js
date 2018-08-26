@@ -338,12 +338,15 @@ function update_display_probers(bases)
 			table.insertRow(1);
 			row = table.rows[1];
 			row.innerHTML = '<td id="mac" class="mac"><a href="/station/'+rowId+'.html">'+z+'</a></td>' +
-							'<td id="manuf" class="manuf"></td>' +
-							'<td id="power" class="power"></td>' +
-							'<td id="probes" class="probes"></td>' +
-							'<td id="seenlast" class="seenlast"></td>' +
-							'<td id="essids" class="essids"></td>'
-							;
+                '<td id="manuf" class="manuf"></td>' +
+                '<td id="iehash" class="iehash"></td>' +
+                '<td id="standard" class="standard"></td>' +
+                '<td id="channelwidth" class="channelwidth"></td>' +
+                '<td id="power" class="power"></td>' +
+                '<td id="probes" class="probes"></td>' +
+                '<td id="seenlast" class="seenlast"></td>' +
+                '<td id="essids" class="essids"></td>'
+                ;
 			} catch (er) {
 				alert(er);
 			}
@@ -352,7 +355,10 @@ function update_display_probers(bases)
 
 		var changes = 0;
 
-		changes += xml_update_cell("probers", "manuf", base);
+        changes += xml_update_cell("probers", "manuf", base);
+        changes += xml_update_cell("probers", "iehash", base);
+        changes += xml_update_cell("probers", "standard", base);
+        changes += xml_update_cell("probers", "channelwidth", base);
 		changes += xml_update_cell("probers", "power", base);
 		changes += xml_update_cell("probers", "probes", base);
 		changes += xml_update_cell("probers", "seenlast", base);

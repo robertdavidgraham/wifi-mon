@@ -51,6 +51,13 @@ unsigned sqdb_add_beacon(
      struct SQDB_String cisco_name
 	 );
 
+enum WiFiStandard {
+    WIFI_80211a,     // 5 GHz
+    WIFI_80211b,    // original 2.4 GHz (11 mbps)
+    WIFI_80211g,    // faster 2.4 GHz (54 mbps)
+    WIFI_80211n,    // faster 2.4/5 GHz, 150/300/450 mbps
+    WIFI_80211ac,   // faster 5 GHz (~gigabit/s)
+};
 /**
  * Called when we see a probe packet from a station
  */
@@ -60,7 +67,10 @@ unsigned sqdb_add_probe_request(
 	struct SQDB_String ssid,
 	struct SQDB_RateList rates1,
 	struct SQDB_RateList rates2,
-    const struct SquirrelPacket *pkt
+    const struct SquirrelPacket *pkt,
+    unsigned ie_hash,
+    enum WiFiStandard standard,
+    unsigned channel_width
 	);
 
 

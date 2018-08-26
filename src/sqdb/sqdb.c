@@ -1117,12 +1117,15 @@ prober_set_packet(struct SQDB_Station *prober, const struct SquirrelPacket *pack
  * update the prober data.
  */
 unsigned sqdb_add_probe_request(
-	struct SQDB *sqdb, 
-	const unsigned char *src_mac,
-	struct SQDB_String ssid,
-	struct SQDB_RateList rates1,
-	struct SQDB_RateList rates2,
-    const struct SquirrelPacket *pkt
+                                struct SQDB *sqdb,
+                                const unsigned char *src_mac,
+                                struct SQDB_String ssid,
+                                struct SQDB_RateList rates1,
+                                struct SQDB_RateList rates2,
+                                const struct SquirrelPacket *pkt,
+                                unsigned ie_hash,
+                                enum WiFiStandard standard,
+                                unsigned channel_width
 )
 {
 	struct SQDB_Station *entry;
@@ -1210,6 +1213,12 @@ unsigned sqdb_add_probe_request(
 		sqdb_ratesfield_copy(&entry->rates2, &rates2);
 	}
 
+    if (entry->standard < standard)
+        entry->standard = standard;
+    if (entry->channel_width < channel_width)
+        entry->channel_width = channel_width;
+    entry->ie_hash = ie_hash;
+    
     prober_set_packet(entry, pkt);
 
 	pixie_leave_critical_section(sqdb->cs);

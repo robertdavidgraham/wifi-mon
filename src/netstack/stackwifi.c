@@ -613,14 +613,74 @@ void squirrel_get_mac_address(struct NetFrame *frame, const unsigned char *px, u
 static unsigned
 hash_information_elements(const unsigned char *px, unsigned offset, unsigned length)
 {
+    unsigned hash = 0;
+    unsigned index = 0;
+    
     /* Kludge alert!
      * So sometimes we've got the CRC in the IE field which can throw things off.
      * Removing the last 4 bytes from the field should still give us the same
      * hashes, so we are going to do that. */
-    if (length - offset > 4)
-        length -= 4;
+    /*if (length - offset > 4)
+        length -= 4;*/
     
-    return fnv1a_32(0, px + offset, length - offset);
+    while (offset + 2 < length) {
+        unsigned tlv_tag = px[offset++];
+        unsigned tlv_length = px[offset++];
+        unsigned tlv_offset = offset;
+        unsigned oui = 0;
+        unsigned oui_type = 0;
+        
+        if (tlv_length > length-offset)
+            tlv_length = length-offset; /* Error: TLV length went past end of packet */
+        
+        offset += tlv_length;
+ 
+        /* Ignore some tags */
+        switch (tlv_tag) {
+            case 0x00: /* ssid */
+            case 0x03: /* channel */
+                continue;
+            case 0xdd:
+                if (tlv_length >= 4) {
+                    oui = px[tlv_offset]<<16 | px[tlv_offset+1]<<8 | px[tlv_offset+2];
+                    oui_type = px[tlv_offset+3];
+                    switch (oui) {
+                        case 0x0050f2: /* Microsoft standards work */
+                            switch (oui_type) {
+                                case 8: /*TPC - Tranmist Power Control */
+                                    if (tlv_length > 5) {
+                                        switch (px[tlv_offset+4]) {
+                                            case 0x00:
+                                                /* The 'tsinfo' field changes from packet to packet,
+                                                 * so we are going to truncate it */
+                                                if (tlv_length > 5)
+                                                    tlv_length = 5;
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+
+        hash = fnv1a_32(hash, px + tlv_offset - 2, tlv_length + 2);
+        //printf("Index[%u] tag[%3u] len[%2u] oui[0x%06x] ouitype[%3u] hash=0x%08x\n", index++, tlv_tag, tlv_length, oui, oui_type, hash);
+    }
+    //printf("\n");
+    
+    
+    return hash;
 }
 
 
@@ -686,7 +746,10 @@ void squirrel_wifi_proberequest(struct Squirrel *squirrel, struct NetFrame *fram
 		struct SQDB_RateList rates2;
 		struct SQDB_String ssid;
         struct SquirrelPacket pkt[1];
-
+        enum WiFiStandard standard = WIFI_80211b;
+        unsigned channel_width = 20;
+        struct InformationElement ie;
+        
         pkt->length = length;
         pkt->secs = frame->time_secs;
         pkt->usecs = frame->time_usecs;
@@ -697,11 +760,23 @@ void squirrel_wifi_proberequest(struct Squirrel *squirrel, struct NetFrame *fram
 		ssid = ie_to_string(get_information_element(px, offset, length, 0x00));
 		rates1 = ie_to_rate_list(get_information_element(px, offset, length, 0x01));
 		rates2 = ie_to_rate_list(get_information_element(px, offset, length, 0x32));
+        
+        ie = get_information_element(px, offset, length, 0x2d);
+        if (ie.px && ie.length > 2) {
+            unsigned ht_cap = ie.px[0] | ie.px[1]<<8;
+            standard = WIFI_80211n;
+            if (ht_cap & 0x0002)
+                channel_width = 40;
+        }
+        
 
 		sqdb_add_probe_request(squirrel->sqdb,
                                frame->src_mac, ssid,
                                rates1, rates2,
-                               pkt);
+                               pkt,
+                               pkt->type,
+                               standard,
+                               channel_width);
 		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
 	}
 }

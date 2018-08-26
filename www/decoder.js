@@ -639,40 +639,199 @@ function decode_microsoft_ie(node, px, field)
 	}
 	var microsoft_type = px[0];
 	var offset = 1;
+    
 	switch (microsoft_type) {
-	case 1:
-		f = DECODETREE(node, "Vendor Specific: WPA " + quick_rsn_information(px.slice(1,px.length)), field);
-		toggle(f.parentNode);
-		if (offset+2 < px.length) {
-			version = ex16le(px,offset);
-			offset += 2;
-			DECODEITEM(f, "Tag Interpretation: " + "WPA IE, type 1, version " + version, field);
-			if (version != 1) {
-				return;
-			}
-		}
-		offset = decode_wpa_items(f, px, offset);
-		
-		break;
-	case 2:
-		DECODEITEM(node, "Windows Multimedia Extensions, version = " + px[1], field);
-		break;
-	default:
-		var str = "";
-		f = DECODETREE(node, "Vendor Specific: Microsoft Tag " + microsoft_type + " Len " + px.length);
-		toggle(f.parentNode);
-		DECODEITEM(f, "Tag Number: " + 221 + "(Vendor Specific)");
-		DECODEITEM(f, "Tag length: " + px.length);
-		DECODEITEM(f, "Vendor: " + "Microsoft");
-		for (i=0; i<10 && i<px.length; i++) {
-			c = px[i];
-			str = str + val_to_hex((c>>4)&0xF) + val_to_hex(c&0xf);
-		}
-		if (px.length > 10)
-			str = str + "...";
-		DECODEITEM(f, "Tag interpretation: " + str);
+        case 1: /* WPA  - WLAN_OUI_TYPE_MICROSOFT_WPA */
+            f = DECODETREE(node, "MS WPA " + quick_rsn_information(px.slice(1,px.length)), field);
+            toggle(f.parentNode);
+            if (offset+2 < px.length) {
+                version = ex16le(px,offset);
+                offset += 2;
+                DECODEITEM(f, "Tag Interpretation: " + "WPA IE, type 1, version " + version, field);
+                if (version != 1) {
+                    return;
+                }
+            }
+            offset = decode_wpa_items(f, px, offset);
+            
+            break;
+        case 2: /* WMM - WLAN_OUI_TYPE_MICROSOFT_WMM  */
+            DECODEITEM(node, "MS WMM (Windows Multimedia Extensions), version = " + px[1], field);
+            break;
+        case 4: /* WPS - WLAN_OUI_TYPE_MICROSOFT_WPS */
+            DECODEITEM(node, "MS WPS (WiFi Protected Setup)", field);
+            break;
+        case 8: /* WPS - WLAN_OUI_TYPE_MICROSOFT_TPC */
+            f = DECODETREE(node, "MS TPC (Transmit Power Control)", field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Type: " + px[0], field.sub(3,1));
+            DECODEITEM(f, "Subtype: " + px[1], field.sub(4,1));
+            DECODEITEM(f, "Version: " + px[2], field.sub(5,1));
+            DECODEITEM(f, "tsinfo: " + (px[3]+px[4]*256), field.sub(6,2));
+            break;
+        default:
+            var str = "";
+            f = DECODETREE(node, "Vendor Specific: Microsoft Tag " + microsoft_type + " Len " + px.length, field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Tag Number: " + 221 + "(Vendor Specific)");
+            DECODEITEM(f, "Tag length: " + px.length);
+            DECODEITEM(f, "Vendor: " + "Microsoft");
+            for (i=0; i<10 && i<px.length; i++) {
+                c = px[i];
+                str = str + val_to_hex((c>>4)&0xF) + val_to_hex(c&0xf);
+            }
+            if (px.length > 10)
+                str = str + "...";
+            DECODEITEM(f, "Tag interpretation: " + str);
 	}
 	
+}
+
+/**
+ * Decode the WiFi Alliance elements
+ */
+function decode_wifialliance_ie(node, px, field)
+{
+    if (px.length < 1) {
+        DECODEITEM(node, "Too short", field);
+        return;
+    }
+    var type = px[0];
+    var offset = 1;
+    
+    switch (type) {
+        case 16:
+            f = DECODETREE(node, "WiFiAlliance - HotSpot 2.0 Indication", field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Type: " + px[0], field.sub(3,1));
+            var f2;
+            var flags = px[1];
+            f2 = DECODETREE(f, "Flags: " + px[1], field.sub(4,1));
+            toggle(f2.parentNode);
+            DECODEFLAG1(f2, flags, 0x01, "DGAF", "Enabled", "Disabled");
+            DECODEFLAG1(f2, flags, 0x02, "PPS MO ID", "Absent", "Present");
+            DECODEFLAG1(f2, flags, 0x04, "ANQP Domain ID", "Absent", "Present");
+            DECODEFLAG1(f2, flags, 0xf0, "Release", {1: "Release 2"});
+
+            break;
+
+        default:
+            var str = "";
+            f = DECODETREE(node, "Vendor Specific: WiFi Alliance " + type + " Len " + px.length, field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Tag Number: " + 221 + "(Vendor Specific)");
+            DECODEITEM(f, "Tag length: " + px.length);
+            DECODEITEM(f, "Vendor: " + "WiFi Alliance");
+            for (i=0; i<10 && i<px.length; i++) {
+                c = px[i];
+                str = str + val_to_hex((c>>4)&0xF) + val_to_hex(c&0xf);
+            }
+            if (px.length > 10)
+                str = str + "...";
+            DECODEITEM(f, "Tag interpretation: " + str);
+    }
+}
+
+/**
+ * Decode the Broadcom elements
+ */
+function decode_broadcom_ie(node, px, field)
+{
+    if (px.length < 1) {
+        DECODEITEM(node, "Too short", field);
+        return;
+    }
+    var type = px[0];
+    var offset = 1;
+    
+    switch (type) {
+        default:
+            var str = "";
+            f = DECODETREE(node, "Vendor Specific: Broadcom " + type + " Len " + px.length, field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Tag Number: " + 221 + "(Vendor Specific)");
+            DECODEITEM(f, "Tag length: " + px.length);
+            DECODEITEM(f, "Vendor: " + "Broadcom");
+            for (i=0; i<10 && i<px.length; i++) {
+                c = px[i];
+                str = str + val_to_hex((c>>4)&0xF) + val_to_hex(c&0xf);
+            }
+            if (px.length > 10)
+                str = str + "...";
+            DECODEITEM(f, "Tag interpretation: " + str);
+    }
+}
+
+/**
+ * Decode the Broadcom/Epigram elements
+ */
+function decode_epigram_ie(node, px, field)
+{
+    if (px.length < 1) {
+        DECODEITEM(node, "Too short", field);
+        return;
+    }
+    var type = px[0];
+    var offset = 1;
+    
+    switch (type) {
+        case 51:
+            f = DECODETREE(node, "Broadcom pre-802.11n", field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Type: " + px[0], field.sub(3,1));
+            break;
+            
+        case 91:
+            f = DECODETREE(node, "Broadcom ULB (Ultra-Low Bandwidth)", field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Type: " + px[0], field.sub(3,1));
+            break;
+            
+        default:
+            var str = "";
+            f = DECODETREE(node, "Vendor Specific: Epigram " + type + " Len " + px.length, field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Tag Number: " + 221 + "(Vendor Specific)");
+            DECODEITEM(f, "Tag length: " + px.length);
+            DECODEITEM(f, "Vendor: " + "Epigram/Broadcom");
+            for (i=0; i<10 && i<px.length; i++) {
+                c = px[i];
+                str = str + val_to_hex((c>>4)&0xF) + val_to_hex(c&0xf);
+            }
+            if (px.length > 10)
+                str = str + "...";
+            DECODEITEM(f, "Tag interpretation: " + str);
+    }
+}
+
+/**
+ * Decode the Apple elements
+ */
+function decode_apple_ie(node, px, field)
+{
+    if (px.length < 1) {
+        DECODEITEM(node, "Too short", field);
+        return;
+    }
+    var type = px[0];
+    var offset = 1;
+    
+    switch (type) {
+        default:
+            var str = "";
+            f = DECODETREE(node, "Vendor Specific: Apple " + type + " Len " + px.length, field);
+            toggle(f.parentNode);
+            DECODEITEM(f, "Tag Number: " + 221 + "(Vendor Specific)");
+            DECODEITEM(f, "Tag length: " + px.length);
+            DECODEITEM(f, "Vendor: " + "Apple");
+            for (i=0; i<10 && i<px.length; i++) {
+                c = px[i];
+                str = str + val_to_hex((c>>4)&0xF) + val_to_hex(c&0xf);
+            }
+            if (px.length > 10)
+                str = str + "...";
+            DECODEITEM(f, "Tag interpretation: " + str);
+    }
 }
 
 /**
@@ -760,6 +919,17 @@ function decode_wpa_items(node, px, offset)
 	return offset;
 }
 
+function FIELDLE_FLAGS(tree, field, name, mask, values)
+{
+    if (field.len() == 1) {
+        var px = field.slice();
+        DECODEFLAG1(tree, px[0], mask, name, values);
+    } else if (field.len() == 2) {
+        var px = field.slice();
+        DECODEFLAG1_16(tree, px[0]|px[1]<<8, mask, field, name, values);
+    }
+}
+
 var Supported = {0:"Not supported", 1:"Supported"};
 function decode_tagged_parm(node, tag, field)
 {
@@ -768,11 +938,14 @@ function decode_tagged_parm(node, tag, field)
 	switch (tag) {
 	case 0: /* SSID */
 		var d = field.toDisplayString();
-		DECODEITEM(node, 'SSID parameter set: "' + d + '"', field);
+        if (d.length == 0)
+            DECODEITEM(node, 'SSID: "" (wildcard)', field);
+        else
+            DECODEITEM(node, 'SSID: "' + d + '"', field);
 		break;
 	case 1: /* Supported Rates */
 		d = parse_rates(field.slice());
-		DECODEITEM(node, "Supported rates: " + d + "[Mbps]", field);
+		DECODEITEM(node, "802.11b rates: " + d + "[Mbps]", field);
 		break
 	case 3:
 		if (field.len() == 1) {
@@ -813,18 +986,39 @@ function decode_tagged_parm(node, tag, field)
             break;
             
         case 45: /* HT Capabilities (802.11n D1.10) */
-            f = DECODETREE(node, "HT Capabilities (802.11n D1.10)", field);
+            f = DECODETREE(node, "802.11n HT Capabilities", field);
             toggle(f.parentNode);
             if (px.length >= 2) {
                 var f2;
-                var flags = ex16le(px,0);
-                f2 = DECODETREE(f, "HT Capabilities: " + NUMHEX16LE(px,0), field.sub(0,2));
+                var flags = field.sub(0,2);
+                f2 = DECODETREE(f, "HT Capabilities: " + NUMHEX16LE(px,0), flags);
                 toggle(f2.parentNode);
-                DECODEFLAG1(f2, flags, 0x0001, "LDPC Coding Capability", "Not Supported", "Supported");
-                DECODEFLAG1(f2, flags, 0x0002, "Channel Width", "20mhz", "40mhz");
+                
+                flags.FLAGLE(f2, 0x0001, "LDPC Coding Capability", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x0002, "Channel Width", {0: "20mhz", 1: "40mhz"});
+                flags.FLAGLE(f2, 0x000c, "SM Power Save", {3: "disabled"});
+                flags.FLAGLE(f2, 0x0010, "Green Field Preamble", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x0020, "Short GI for 20MHz", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x0040, "Short GI for 40MHz", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x0040, "Short GI for 40MHz", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x0080, "Tx STBC", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x0300, "Rx STBC", {0: "Not Supported"});
+                flags.FLAGLE(f2, 0x0400, "Delayed Block ACK", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x0800, "Max A-MSDU length", {0: "3839 bytes"});
+                flags.FLAGLE(f2, 0x1000, "DSSS/CCK Mode in 40MHz", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x2000, "PSMP Mode", {0: "Not Supported", 1: "Supported"});
+                flags.FLAGLE(f2, 0x4000, "40MHz Tolerance", {0: "Tolerated", 1: "Not Tolerated"});
+                flags.FLAGLE(f2, 0x8000, "L-SIG TXOP", {0: "Not Supported", 1: "Supported"});
             }
             if (px.length >= 3) {
-                f2 = DECODETREE(f, "A-MPDU Parameters: " + NUMHEX8(px,2), field.sub(2,3));
+                var flags = field.sub(2,1);
+                f2 = DECODETREE(f, "A-MPDU Parameters: " + NUMHEX8(px,2), flags);
+                toggle(f2.parentNode);
+                
+                flags.FLAG(f2, 0x03, "Max Rx A-MPDU Length", {3: "65535 bytes"});
+                flags.FLAG(f2, 0x1C, "MPDU Density", {5: "4 usec"});
+                flags.FLAG(f2, 0xE0, "Reserved", {0: "0"});
+
             }
             if (px.length >= 3 + 16) {
                 f2 = DECODETREE(f, "Rx Modulation/Ecoding Scheme " , field.sub(3,3+16));
@@ -867,7 +1061,7 @@ function decode_tagged_parm(node, tag, field)
 		break;
 	case 50: /* Extended Supported Rates */
 		d = parse_rates(px);
-		DECODEITEM(node, "Extended Supported Rates: " + d + "[Mbps]", field);
+		DECODEITEM(node, "802.11g rates: " + d + "[Mbps]", field);
 		break;
             
         case 61:
@@ -977,7 +1171,7 @@ function decode_tagged_parm(node, tag, field)
             }
             break;
 	case 191:
-		f = DECODETREE(node, "VHT Capabilities (802.11ac D3.1)", field);
+		f = DECODETREE(node, "802.11ac VHT Capabilities", field);
 		toggle(f.parentNode);
 		if (field.len() >= 1) {
 			field.sub(0,1).FLAG(f, 0x03, "Max MPDU Length", {2: "11,454"});
@@ -1020,14 +1214,23 @@ function decode_tagged_parm(node, tag, field)
 			oui = ex24be(px,0);
 			switch (oui) {
 			case 0x001018:
-				DECODEITEM(node, "Vendor Specific: " + "Broadcom", field);
-				break;
-			case 0x0050f2:
-				decode_microsoft_ie(node, px.slice(3,px.length), field);
-				break;
-			case 0x004096:
-				decode_aironet_ie(node, px.slice(3,px.length), field);
-				break;
+                    decode_broadcom_ie(node, px.slice(3,px.length), field);
+                    break;;
+            case 0x0017f2:
+                    decode_apple_ie(node, px.slice(3,px.length), field);
+                    break;
+            case 0x0050f2:
+                    decode_microsoft_ie(node, px.slice(3,px.length), field);
+                    break;
+            case 0x00904c:
+                    decode_epigram_ie(node, px.slice(3,px.length), field);
+                    break;
+            case 0x004096:
+                    decode_aironet_ie(node, px.slice(3,px.length), field);
+                    break;
+            case 0x506f9a:
+                    decode_wifialliance_ie(node, px.slice(3,px.length), field);
+                    break;
             case 0x0037f:
                     if (px.length < 4) {
                         DECODEITEM(node, "Vendor Specific: " + "Atheros", field);
@@ -1465,10 +1668,19 @@ function DECODEFLAG1(node, flags, mask, name, value0, value1)
 			BIT(flags,mask,0x04) +
 			BIT(flags,mask,0x02) +
 			BIT(flags,mask,0x01);
-	DECODEITEM(node, bits + " = " + name + ": " + ((mask&flags)?value1:value0) );
+    var n = flags & mask;
+    while (mask && !(mask &1)) {
+        mask = mask >> 1;
+        n = n >> 1;
+    }
+    
+    if (typeof value0 === 'object')
+        DECODEITEM(node, bits + " = " + name + ": " + value0[n] );
+    else
+        DECODEITEM(node, bits + " = " + name + ": " + ((mask&flags)?value1:value0) );
 }
 
-function DECODEFLAG1_16(node, flags, mask, r, name, e)
+function DECODEFLAG1_16(node, flags, mask, field, name, e)
 {
 	var bits = "";
 	for (i=0; i<16; i++) {
@@ -1482,7 +1694,8 @@ function DECODEFLAG1_16(node, flags, mask, r, name, e)
 		mask = mask >> 1;
 		flags = flags >> 1;
 	}
-	DECODEITEM(node, bits + " = " + name + ": " + ENUM((mask&flags), e), r );
+    
+	DECODEITEM(node, bits + " = " + name + ": " + ENUM((mask&flags), e), field);
 }
 
 function DECODEFLAG8(node, flags, mask, r, name, e)

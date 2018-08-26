@@ -142,6 +142,9 @@ struct SQDB_Station
 	time_t dbm_last_update;
     unsigned probe_count;
     unsigned response_count;
+    enum WiFiStandard standard;
+    unsigned channel_width;
+    unsigned ie_hash;
     time_t first;
     time_t last;
 
