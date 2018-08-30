@@ -110,7 +110,7 @@ display_probers_list(struct mg_connection *c, const struct mg_request_info *ri, 
 
     list = sqdb_enum_probers(sqdb, &list_count);
 
-	mg_headers_ok(c, "text/html");
+	mg_headers_ok(c, "text/html; charset=utf-8");
 	X(c, "Connection: close\r\n");
 	X(c, "\r\n");
 
@@ -164,7 +164,7 @@ display_probers_list(struct mg_connection *c, const struct mg_request_info *ri, 
         
         X(c, "  <td id=\"iehash\" class=\"iehash\">0x%08x</td>\n", sta->ie_hash);
         X(c, "  <td id=\"standard\" class=\"standard\">%s</td>\n", standard_name(sta->standard));
-        X(c, "  <td id=\"channelwidth\" class=\"channelwidth\">%d MHz</td>\n", sta->channel_width);
+        X(c, "  <td id=\"channelwidth\" class=\"channelwidth\">%dMHz</td>\n", sta->channel_width);
 
 		
 		/*
@@ -285,7 +285,7 @@ xml_probers_list(struct mg_connection *c, const struct mg_request_info *ri, void
 
         X(c, "  <iehash>0x%08x</iehash>\n", sta->ie_hash);
         X(c, "  <standard>%s</standard>\n", standard_name(sta->standard));
-        X(c, "  <channelwidth>%d MHz</channelwidth>\n", sta->channel_width);
+        X(c, "  <channelwidth>%dMHz</channelwidth>\n", sta->channel_width);
 
 
 		/*

@@ -661,6 +661,9 @@ function decode_microsoft_ie(node, px, field)
         case 4: /* WPS - WLAN_OUI_TYPE_MICROSOFT_WPS */
             DECODEITEM(node, "MS WPS (WiFi Protected Setup)", field);
             break;
+        case 6:
+            DECODEITEM(node, "MS PSD (Proximity Service Discovery)", field);
+            break;
         case 8: /* WPS - WLAN_OUI_TYPE_MICROSOFT_TPC */
             f = DECODETREE(node, "MS TPC (Transmit Power Control)", field);
             toggle(f.parentNode);
@@ -931,6 +934,8 @@ function FIELDLE_FLAGS(tree, field, name, mask, values)
 }
 
 var Supported = {0:"Not supported", 1:"Supported"};
+var NoYes = {0:"no", 1:"yes"};
+
 function decode_tagged_parm(node, tag, field)
 {
     var px = field.slice();
@@ -945,7 +950,7 @@ function decode_tagged_parm(node, tag, field)
 		break;
 	case 1: /* Supported Rates */
 		d = parse_rates(field.slice());
-		DECODEITEM(node, "802.11b rates: " + d + "[Mbps]", field);
+		DECODEITEM(node, "[802.11b ] rates: " + d + "[Mbps]", field);
 		break
 	case 3:
 		if (field.len() == 1) {
@@ -986,7 +991,7 @@ function decode_tagged_parm(node, tag, field)
             break;
             
         case 45: /* HT Capabilities (802.11n D1.10) */
-            f = DECODETREE(node, "802.11n HT Capabilities", field);
+            f = DECODETREE(node, "[802.11n ] HT Capabilities", field);
             toggle(f.parentNode);
             if (px.length >= 2) {
                 var f2;
@@ -996,15 +1001,15 @@ function decode_tagged_parm(node, tag, field)
                 
                 flags.FLAGLE(f2, 0x0001, "LDPC Coding Capability", {0: "Not Supported", 1: "Supported"});
                 flags.FLAGLE(f2, 0x0002, "Channel Width", {0: "20mhz", 1: "40mhz"});
-                flags.FLAGLE(f2, 0x000c, "SM Power Save", {3: "disabled"});
+                flags.FLAGLE(f2, 0x000c, "SM Power Save", {0: "static", 1: "dynamic", 2: "reserved", 3: "disabled"});
                 flags.FLAGLE(f2, 0x0010, "Green Field Preamble", {0: "Not Supported", 1: "Supported"});
                 flags.FLAGLE(f2, 0x0020, "Short GI for 20MHz", {0: "Not Supported", 1: "Supported"});
                 flags.FLAGLE(f2, 0x0040, "Short GI for 40MHz", {0: "Not Supported", 1: "Supported"});
                 flags.FLAGLE(f2, 0x0040, "Short GI for 40MHz", {0: "Not Supported", 1: "Supported"});
                 flags.FLAGLE(f2, 0x0080, "Tx STBC", {0: "Not Supported", 1: "Supported"});
-                flags.FLAGLE(f2, 0x0300, "Rx STBC", {0: "Not Supported"});
+                flags.FLAGLE(f2, 0x0300, "Rx STBC", {0: "Not Supported", 1: "one spacial stream", 2: "two spacial sreams", 3: "three spacial streams"});
                 flags.FLAGLE(f2, 0x0400, "Delayed Block ACK", {0: "Not Supported", 1: "Supported"});
-                flags.FLAGLE(f2, 0x0800, "Max A-MSDU length", {0: "3839 bytes"});
+                flags.FLAGLE(f2, 0x0800, "Max A-MSDU length", {0: "3839 bytes", 1: "7935 ytes"});
                 flags.FLAGLE(f2, 0x1000, "DSSS/CCK Mode in 40MHz", {0: "Not Supported", 1: "Supported"});
                 flags.FLAGLE(f2, 0x2000, "PSMP Mode", {0: "Not Supported", 1: "Supported"});
                 flags.FLAGLE(f2, 0x4000, "40MHz Tolerance", {0: "Tolerated", 1: "Not Tolerated"});
@@ -1061,7 +1066,7 @@ function decode_tagged_parm(node, tag, field)
 		break;
 	case 50: /* Extended Supported Rates */
 		d = parse_rates(px);
-		DECODEITEM(node, "802.11g rates: " + d + "[Mbps]", field);
+		DECODEITEM(node, "[802.11g ] rates: " + d + "[Mbps]", field);
 		break;
             
         case 61:
@@ -1083,10 +1088,19 @@ function decode_tagged_parm(node, tag, field)
             }
 			break;
 		case 107: /* Internetworking */
-			f = DECODETREE(node, "Internetworking", field);
+			f = DECODETREE(node, "[802.11u ] Internetworking", field);
 			toggle(f.parentNode);
 			if (px.length >= 1) {
-				DECODEFLAG8(f, px[0], 0x0F, field.sub(0,1), "Access Network Type", {15: "Wildcard"});
+				DECODEFLAG8(f, px[0], 0x0F, field.sub(0,1), "Access Network Type",
+                            {0: "private",
+                            1: "private-with-guest",
+                            2: "chargeable-public",
+                            3: "free-public",
+                            4: "personal-device",
+                            5: "emergency-services",
+                            14: "test",
+                            15: "Wildcard"}
+                            );
 				DECODEFLAG8(f, px[0], 0x10, field.sub(0,1), "Internet", {0: "no",1:"yes"});
 				DECODEFLAG8(f, px[0], 0x20, field.sub(0,1), "ASRA", {0: "no",1:"yes"});
 				DECODEFLAG8(f, px[0], 0x40, field.sub(0,1), "ESR", {0: "no",1:"yes"});
@@ -1101,81 +1115,81 @@ function decode_tagged_parm(node, tag, field)
             toggle(f.parentNode);
             if (px.length >= 8) {
                 f2 = DECODETREE(f, "Octet 1: "+NUMHEX8(px,0), field.sub(0, 1));
-                DECODEFLAG1(f2, px[0], 0x01, "20/40 BSS Coexistance", "no", "yes");
-                DECODEFLAG1(f2, px[0], 0x02, "On-demand beacon", "no", "yes");
-                DECODEFLAG1(f2, px[0], 0x04, "Extended Channel Switching", "no", "yes");
-                DECODEFLAG1(f2, px[0], 0x08, "WAVE indication", "no", "yes");
-                DECODEFLAG1(f2, px[0], 0x10, "PSMP", "no", "yes");
-                DECODEFLAG1(f2, px[0], 0x20, "(Reserved)", "no", "yes");
-                DECODEFLAG1(f2, px[0], 0x40, "S-PSMP Support", "no", "yes");
-                DECODEFLAG1(f2, px[0], 0x80, "Event", "no", "yes");
+                DECODEFLAG1(f2, px[0], 0x01, "20/40 BSS Coexistance", NoYes);
+                DECODEFLAG1(f2, px[0], 0x02, "On-demand beacon", NoYes);
+                DECODEFLAG1(f2, px[0], 0x04, "Extended Channel Switching", NoYes);
+                DECODEFLAG1(f2, px[0], 0x08, "WAVE indication", NoYes);
+                DECODEFLAG1(f2, px[0], 0x10, "PSMP", NoYes);
+                DECODEFLAG1(f2, px[0], 0x20, "(Reserved)", NoYes);
+                DECODEFLAG1(f2, px[0], 0x40, "S-PSMP Support", NoYes);
+                DECODEFLAG1(f2, px[0], 0x80, "Event", NoYes);
 
                 f2 = DECODETREE(f, "Octet 2: "+NUMHEX8(px,1), field.sub(1, 2));
-                DECODEFLAG1(f2, px[1], 0x01, "Diagnostics", "no", "yes");
-                DECODEFLAG1(f2, px[1], 0x02, "Multicast", "no", "yes");
-                DECODEFLAG1(f2, px[1], 0x04, "Location Tracking", "no", "yes");
-                DECODEFLAG1(f2, px[1], 0x08, "FMS", "no", "yes");
-                DECODEFLAG1(f2, px[1], 0x10, "Proxy ARP", "no", "yes");
-                DECODEFLAG1(f2, px[1], 0x20, "Collocated Interference Reporting", "no", "yes");
-                DECODEFLAG1(f2, px[1], 0x40, "Civic Location", "no", "yes");
-                DECODEFLAG1(f2, px[1], 0x80, "Geospatial Location", "no", "yes");
+                DECODEFLAG1(f2, px[1], 0x01, "Diagnostics", NoYes);
+                DECODEFLAG1(f2, px[1], 0x02, "Multicast", NoYes);
+                DECODEFLAG1(f2, px[1], 0x04, "Location Tracking", NoYes);
+                DECODEFLAG1(f2, px[1], 0x08, "FMS", NoYes);
+                DECODEFLAG1(f2, px[1], 0x10, "Proxy ARP", NoYes);
+                DECODEFLAG1(f2, px[1], 0x20, "Collocated Interference Reporting", NoYes);
+                DECODEFLAG1(f2, px[1], 0x40, "Civic Location", NoYes);
+                DECODEFLAG1(f2, px[1], 0x80, "Geospatial Location", NoYes);
                 
                 f2 = DECODETREE(f, "Octet 3: "+NUMHEX8(px,2), field.sub(2, 3));
-                DECODEFLAG1(f2, px[2], 0x01, "TFS", "no", "yes");
-                DECODEFLAG1(f2, px[2], 0x02, "WNM-Sleep Mode", "no", "yes");
-                DECODEFLAG1(f2, px[2], 0x04, "TIM Broadcast", "no", "yes");
-                DECODEFLAG1(f2, px[2], 0x08, "BSS Transition", "no", "yes");
-                DECODEFLAG1(f2, px[2], 0x10, "QoS Traffic Capability", "no", "yes");
-                DECODEFLAG1(f2, px[2], 0x20, "AC Station Count", "no", "yes");
-                DECODEFLAG1(f2, px[2], 0x40, "Multiple BSSID", "no", "yes");
-                DECODEFLAG1(f2, px[2], 0x80, "Timing Measurement", "no", "yes");
+                DECODEFLAG1(f2, px[2], 0x01, "TFS", NoYes);
+                DECODEFLAG1(f2, px[2], 0x02, "WNM-Sleep Mode", NoYes);
+                DECODEFLAG1(f2, px[2], 0x04, "TIM Broadcast", NoYes);
+                DECODEFLAG1(f2, px[2], 0x08, "BSS Transition", NoYes);
+                DECODEFLAG1(f2, px[2], 0x10, "QoS Traffic Capability", NoYes);
+                DECODEFLAG1(f2, px[2], 0x20, "AC Station Count", NoYes);
+                DECODEFLAG1(f2, px[2], 0x40, "Multiple BSSID", NoYes);
+                DECODEFLAG1(f2, px[2], 0x80, "Timing Measurement", NoYes);
 
                 f2 = DECODETREE(f, "Octet 4: "+NUMHEX8(px,3), field.sub(3, 4));
-                DECODEFLAG1(f2, px[3], 0x01, "Channel Usage", "no", "yes");
-                DECODEFLAG1(f2, px[3], 0x02, "SSID List", "no", "yes");
-                DECODEFLAG1(f2, px[3], 0x04, "DMS", "no", "yes");
-                DECODEFLAG1(f2, px[3], 0x08, "UTC TSF Offset", "no", "yes");
-                DECODEFLAG1(f2, px[3], 0x10, "Peer U-APSD Buffer STA Support", "no", "yes");
-                DECODEFLAG1(f2, px[3], 0x20, "TDLS Peer PSM Support", "no", "yes");
-                DECODEFLAG1(f2, px[3], 0x40, "TDLS Channel Switching", "no", "yes");
-                DECODEFLAG1(f2, px[3], 0x80, "interworking", "no", "yes");
+                DECODEFLAG1(f2, px[3], 0x01, "Channel Usage", NoYes);
+                DECODEFLAG1(f2, px[3], 0x02, "SSID List", NoYes);
+                DECODEFLAG1(f2, px[3], 0x04, "DMS", NoYes);
+                DECODEFLAG1(f2, px[3], 0x08, "UTC TSF Offset", NoYes);
+                DECODEFLAG1(f2, px[3], 0x10, "Peer U-APSD Buffer STA Support", NoYes);
+                DECODEFLAG1(f2, px[3], 0x20, "TDLS Peer PSM Support", NoYes);
+                DECODEFLAG1(f2, px[3], 0x40, "TDLS Channel Switching", NoYes);
+                DECODEFLAG1(f2, px[3], 0x80, "interworking", NoYes);
 
                 f2 = DECODETREE(f, "Octet 5: "+NUMHEX8(px,4), field.sub(4, 5));
-                DECODEFLAG1(f2, px[4], 0x01, "QoS Map", "no", "yes");
-                DECODEFLAG1(f2, px[4], 0x02, "EBR", "no", "yes");
-                DECODEFLAG1(f2, px[4], 0x04, "SSPN Interface", "no", "yes");
-                DECODEFLAG1(f2, px[4], 0x08, "(Reserved)", "no", "yes");
-                DECODEFLAG1(f2, px[4], 0x10, "MSGCF Capability", "no", "yes");
-                DECODEFLAG1(f2, px[4], 0x20, "TDLS Support", "no", "yes");
-                DECODEFLAG1(f2, px[4], 0x40, "TDLS Prohibited", "no", "yes");
-                DECODEFLAG1(f2, px[4], 0x80, "TDLS Channel Switching", "no", "yes");
+                DECODEFLAG1(f2, px[4], 0x01, "QoS Map", NoYes);
+                DECODEFLAG1(f2, px[4], 0x02, "EBR", NoYes);
+                DECODEFLAG1(f2, px[4], 0x04, "SSPN Interface", NoYes);
+                DECODEFLAG1(f2, px[4], 0x08, "(Reserved)", NoYes);
+                DECODEFLAG1(f2, px[4], 0x10, "MSGCF Capability", NoYes);
+                DECODEFLAG1(f2, px[4], 0x20, "TDLS Support", NoYes);
+                DECODEFLAG1(f2, px[4], 0x40, "TDLS Prohibited", NoYes);
+                DECODEFLAG1(f2, px[4], 0x80, "TDLS Channel Switching", NoYes);
 
                 f2 = DECODETREE(f, "Octet 6: "+NUMHEX8(px,5), field.sub(5, 6));
-                DECODEFLAG1(f2, px[5], 0x01, "Reject Unadmitted Frame", "no", "yes");
+                DECODEFLAG1(f2, px[5], 0x01, "Reject Unadmitted Frame", NoYes);
                 DECODEFLAG1(f2, px[5], 0x0E, "Service Interval Granularity", "5ms", "10ms", "15ms", "20ms");
-                DECODEFLAG1(f2, px[5], 0x10, "Identifier Location", "no", "yes");
-                DECODEFLAG1(f2, px[5], 0x20, "U-APSD Coexistence", "no", "yes");
-                DECODEFLAG1(f2, px[5], 0x40, "WNM-Notification", "no", "yes");
-                DECODEFLAG1(f2, px[5], 0x80, "QAB Capability", "no", "yes");
+                DECODEFLAG1(f2, px[5], 0x10, "Identifier Location", NoYes);
+                DECODEFLAG1(f2, px[5], 0x20, "U-APSD Coexistence", NoYes);
+                DECODEFLAG1(f2, px[5], 0x40, "WNM-Notification", NoYes);
+                DECODEFLAG1(f2, px[5], 0x80, "QAB Capability", NoYes);
 
                 f2 = DECODETREE(f, "Octet 7: "+NUMHEX8(px,6), field.sub(6, 7));
-                DECODEFLAG1(f2, px[6], 0x01, "UTF-8 SSID", "no", "yes");
+                DECODEFLAG1(f2, px[6], 0x01, "UTF-8 SSID", NoYes);
                 DECODEFLAG1(f2, px[6], 0xFE, "(Reserved)", 0);
 
                 f2 = DECODETREE(f, "Octet 8: "+NUMHEX8(px,7), field.sub(7, 8));
                 DECODEFLAG1(f2, px[7], 0x1F, "(Reserved)", 0);
-                DECODEFLAG1(f2, px[7], 0x20, "TDLS Wider Bandwidth", "no", "yes");
-                DECODEFLAG1(f2, px[7], 0x40, "Operating Mode Notfication", "no", "yes");
+                DECODEFLAG1(f2, px[7], 0x20, "TDLS Wider Bandwidth", NoYes);
+                DECODEFLAG1(f2, px[7], 0x40, "Operating Mode Notfication", {0: "no", 1: "yes"});
                 DECODEFLAG1(f2, px[7], 0x80, "Max Number of MSDUs in A-MSDU", "0", "1");
 
             }
             break;
 	case 191:
-		f = DECODETREE(node, "802.11ac VHT Capabilities", field);
+		f = DECODETREE(node, "[802.11ac] VHT Capabilities", field);
 		toggle(f.parentNode);
 		if (field.len() >= 1) {
-			field.sub(0,1).FLAG(f, 0x03, "Max MPDU Length", {2: "11,454"});
-			field.sub(0,1).FLAG(f, 0x0C, "Channel Width Set", {0: "Neither 160mhz or 80mhz+80mhz"});
+            field.sub(0,1).FLAG(f, 0x03, "Max MPDU Length", {0:"3,895", 1:"7,991", 2: "11,454", 3: "reserved"});
+            field.sub(0,1).FLAG(f, 0x0C, "160MHz Channel Width", {0: "Not Supported", 1: "Contiguous", 2: "Contiguous and split", 3: "reserved"});
 			field.sub(0,1).FLAG(f, 0x10, "Rx LDPC", Supported);
 			field.sub(0,1).FLAG(f, 0x20, "Short GI for 80mhz", Supported);
 			field.sub(0,1).FLAG(f, 0x40, "Short GI for 160mhz/80+80mhz", Supported);
