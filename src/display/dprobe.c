@@ -103,7 +103,7 @@ pcap_decode_probe(struct mg_connection *c, const struct mg_request_info *ri, voi
     
     for (i=0; i<count_found; i++) {
         unsigned char header[16];
-        unsigned time_sec = pkt[i].secs;
+        unsigned time_sec = (unsigned)pkt[i].secs;
         unsigned time_usec = pkt[i].usecs;
         unsigned buffer_size = pkt[i].length;
         unsigned original_length = pkt[i].length;

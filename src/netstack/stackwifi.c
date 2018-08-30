@@ -614,7 +614,6 @@ static unsigned
 hash_information_elements(const unsigned char *px, unsigned offset, unsigned length)
 {
     unsigned hash = 0;
-    unsigned index = 0;
     
     /* Kludge alert!
      * So sometimes we've got the CRC in the IE field which can throw things off.
@@ -630,8 +629,11 @@ hash_information_elements(const unsigned char *px, unsigned offset, unsigned len
         unsigned oui = 0;
         unsigned oui_type = 0;
         
-        if (tlv_length > length-offset)
+        if (tlv_length > length-offset) {
+            if (length - offset == 2)
+                break;
             tlv_length = length-offset; /* Error: TLV length went past end of packet */
+        }
         
         offset += tlv_length;
  
@@ -1314,6 +1316,7 @@ void squirrel_wifi_ctrl_frame(struct Squirrel *squirrel, struct NetFrame *frame,
 	unsigned transmitter_type;
 	const unsigned char *substation_mac;
 	const unsigned char *access_point_mac;
+    const unsigned char *bssid;
 
 	/* VALIDATE: enough data in packet */
 	if (length < 16) {
@@ -1360,7 +1363,7 @@ void squirrel_wifi_ctrl_frame(struct Squirrel *squirrel, struct NetFrame *frame,
 	}
 
 	switch (transmitter_type) {
-		const unsigned char *bssid;
+		
 	case STATION_TYPE_BASE:
 		substation_mac = receiver;
 		access_point_mac = transmitter;

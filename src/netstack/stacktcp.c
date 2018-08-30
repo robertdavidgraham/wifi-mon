@@ -108,8 +108,10 @@ int smellslike_msn_messenger(const unsigned char *data, unsigned length)
 
 
 	method = i;
-	while (i<length && !isspace(data[i]))
-		i++, method_length++;;
+    while (i<length && !isspace(data[i])) {
+        i++;
+        method_length++;
+    }
 	while (i<length && data[i] != '\n' && isspace(data[i]))
 		i++;
 	parms = i;

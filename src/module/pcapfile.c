@@ -29,14 +29,6 @@
 
 #ifdef WIN32
 #define snprintf _snprintf
-
-#if 0
-/* This kludge allows us to seek beyond 2-gig files on
- * Windows */
-int __cdecl _fseeki64(FILE *fp, __int64 offset, int positoin);
-__int64 __cdecl _ftelli64(FILE *fp);
-#define fseek _fseeki64
-#endif
 #endif
 
 
