@@ -8,7 +8,14 @@ extern "C" {
 #endif
 #include <stdio.h>
 #include <time.h>
-#include "sqdb/sqdb.h"
+#include "sqdb.h"
+enum OutputSniff {
+    FERRET_SNIFF_NONE,
+    FERRET_SNIFF_ALL,
+    FERRET_SNIFF_MOST,
+    FERRET_SNIFF_IVS,
+    FERRET_SNIFF_SIFT
+};
 
 struct TCPENTRY {
 	unsigned ip_src;
@@ -86,7 +93,7 @@ struct Squirrel
 		char directory[256];
 		char filename[256];
 		char comment[256];
-		unsigned sniff;
+		enum OutputSniff sniff;
 		unsigned noappend:1;
 		unsigned include_fcs_err:1;
 		char current_name[256];
@@ -175,20 +182,17 @@ struct Squirrel
 
 int ferret_filter_mac(struct Squirrel *squirrel, const unsigned char *mac_addr);
 
-void squirrel_ethernet_frame(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length);
-void squirrel_ip(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length);
-void squirrel_arp(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length);
-void squirrel_udp(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length);
-void squirrel_tcp(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length);
-void squirrel_wifi_frame(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length);
-void squirrel_dhcp(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length);
-void squirrel_dns(struct Squirrel *squirrel, struct NetFrame *frame, const unsigned char *px, unsigned length);
+void squirrel_ethernet_frame(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length);
+void squirrel_ip(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length);
+void squirrel_arp(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length);
+void squirrel_udp(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length);
+void squirrel_tcp(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length);
+void squirrel_wifi_frame(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length);
+void squirrel_dhcp(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length);
+void squirrel_dns(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length);
 
 unsigned filter_has_port(unsigned *list, unsigned count, unsigned port);
 
-#ifndef UNUSEDPARM
-#define UNUSEDPARM(x) x=(x)
-#endif
 
 #define X mg_printf
 

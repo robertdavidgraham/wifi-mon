@@ -1,33 +1,35 @@
 /* Copyright (c) 2007 by Errata Security, All Rights Reserved
  * Programer(s): Robert David Graham [rdg]
  */
+#include "main-conf.h"
+#include "squirrel.h"
 #include <assert.h>
-#include <ctype.h>
+//#include <ctype.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-#include <time.h>
+//#include <time.h>
 #include <sys/stat.h>
-#include <signal.h>
-#include "formats.h"
-#include "netframe.h"
-#include "hexval.h"
-#include "squirrel.h"
-#include "sqdb/sqdb2.h"
+//#include <signal.h>
+//#include "util-extract.h"
+#include "stack-frame.h"
+//#include "util-hexval.h"
+#include "sqdb2.h"
 #include "mongoose.h"
-#include "pixie.h"
-#include "sprintf_s.h"
+#include "util-pixie.h"
+#include "util-annexk.h"
+#include "util-unused.h"
 
-#ifdef WIN32
-#include <direct.h> /* for Posix mkdir() */
-#else
-#include <unistd.h>
-#endif
+//#ifdef WIN32
+//#include <direct.h> /* for Posix mkdir() */
+//#else
+//#include <unistd.h>
+//#endif
 
-#include "pcapfile.h"
-#include "pcaplive.h"
-#include "mystring.h"
+#include "pcap-file.h"
+#include "pcap-live.h"
+//#include "util-stratom.h"
 
 /**
  * This structure is initialized with 'pcap_init()' at the beginning
@@ -36,13 +38,8 @@
 struct PCAPLIVE pcap;
 pcap_if_t *alldevs;
 
-enum {
-	FERRET_SNIFF_NONE,
-	FERRET_SNIFF_ALL,
-	FERRET_SNIFF_MOST,
-	FERRET_SNIFF_IVS,
-	FERRET_SNIFF_SIFT
-};
+
+
 
 void SQUIRREL_EVENT(const char *msg, ...)
 {
@@ -51,10 +48,12 @@ void SQUIRREL_EVENT(const char *msg, ...)
 	va_start(marker, msg);
 	vfprintf(stderr, msg, marker);
 	va_end(marker);
+#else
+    UNUSEDPARM(msg);
 #endif
 }
 
-void FRAMERR(struct NetFrame *frame, const char *msg, ...)
+void FRAMERR(struct StackFrame *frame, const char *msg, ...)
 {
 	va_list marker;
 	va_start(marker, msg);
@@ -67,7 +66,7 @@ void FRAMERR(struct NetFrame *frame, const char *msg, ...)
 }
 
 
-void *squirrel_create()
+static void *squirrel_create()
 {
 	struct Squirrel *result;
 
@@ -78,14 +77,13 @@ void *squirrel_create()
 	result->cs = pixie_initialize_critical_section();
 	return result;
 }
-void squirrel_destroy(struct Squirrel *squirrel)
+static void squirrel_destroy(struct Squirrel *squirrel)
 {
 	free(squirrel);
 }
 
 
 
-int debug=1;
 
 
 
@@ -94,6 +92,7 @@ unsigned control_c_pressed=0;
 
 void control_c_handler(int sig)
 {
+    UNUSEDPARM(sig);
 	control_c_pressed = 1;
 }
 void sigpipe_handler(int sig){
@@ -156,7 +155,7 @@ again:
  * The packets are appended to rotating logfiles in the specified
  * directory.
  */
-void sniff_packets(struct Squirrel *squirrel, const unsigned char *buf, const struct NetFrame *frame)
+void sniff_packets(struct Squirrel *squirrel, const unsigned char *buf, const struct StackFrame *frame)
 {
 	time_t now;
 	struct tm *ptm;
@@ -284,182 +283,6 @@ ferret_filter_mac(struct Squirrel *squirrel, const unsigned char *mac_addr)
 	return 0;
 }
 
-int wifi_frequency_to_channel(int frequency)
-{
-    /* 2.4 GHz 802.11b/g/n */
-    if (2402 <= frequency && frequency <= 2472) {
-        return 1 + ((frequency - 2412) / 5);
-    } else if (frequency == 2484) {
-        return 14; /* Japan */
-    } else if (5150 <= frequency && frequency <= 5350) {
-        /* U-NII-1 = 5150 - 5250 max 50 mW */
-        /* U-NII-2 = 5250 - 5350 max 250 mW */
-        return 30 + ((frequency - 5150) / 5 );
-    } else if (5470 <= frequency && frequency <= 5720) {
-        /* U-NII-2e =  */
-        return 94 + ((frequency - 5470) / 5 );
-    } else if (5720 <= frequency && frequency <= 5865) {
-        /* U-NII-2e =  */
-        return 144 + ((frequency - 5720) / 5 );
-    } else
-        return -1;
-}
-
-void
-squirrel_frame(struct Squirrel *squirrel,
-               struct NetFrame *frame,
-               const unsigned char *px, unsigned length)
-{
-	/* Record the current time */
-	if (squirrel->now != (time_t)frame->time_secs) {
-		squirrel->now = (time_t)frame->time_secs;
-
-		if (squirrel->first == 0)
-			squirrel->first = frame->time_secs;
-
-        squirrel->sqdb->kludge.time_stamp = frame->time_secs;
-	}
-
-    squirrel->sqdb->kludge.dbm = 0;
-    squirrel->sqdb->kludge.channel = 0;
-
-	/* Clear the information that we will set in the frame */
-	//squirrel->frame.flags2 = 0;
-	frame->flags.clear = 0;
-	squirrel->something_new_found = 0;
-
-
-	switch (frame->layer2_protocol) {
-	case 1: /* Ethernet */
-		squirrel_ethernet_frame(squirrel, frame, px, length);
-		break;
-	case 0x69: /* WiFi */
-		squirrel_wifi_frame(squirrel, frame, px, length);
-		break;
-	case 119: /* DLT_PRISM_HEADER */
-		/* This was original created to handle Prism II cards, but now we see this
-		 * from other cards as well, such as the 'madwifi' drivers using Atheros
-		 * chipsets.
-		 *
-		 * This starts with a "TLV" format, a 4-byte little-endian tag, followed by
-		 * a 4-byte little-endian length. This TLV should contain the entire Prism
-		 * header, after which we'll find the real header. Therefore, we should just
-		 * be able to parse the 'length', and skip that many bytes. I'm told it's more
-		 * complicated than that, but it seems to work right now, so I'm keeping it 
-		 * this way.
-		 */
-		if (length < 8) {
-			FRAMERR(frame, "unknown linktype = %d (expected Ethernet or wifi)\n", frame->layer2_protocol);
-			return;
-		}
-		if (ex32le(px+0) != 0x00000044) {
-			FRAMERR(frame, "unknown linktype = %d (expected Ethernet or wifi)\n", frame->layer2_protocol);
-			return;
-		} else {
-			unsigned header_length = ex32le(px+4);
-
-			if (header_length >= length) {
-				FRAMERR(frame, "unknown linktype = %d (expected Ethernet or wifi)\n", frame->layer2_protocol);
-				return;
-			}
-
-			/*
-			 * Ok, we've skipped the Prism header, now let's process the 
-			 * wifi packet as we would in any other case. TODO: in the future,
-			 * we should parse the Prism header and extract some of the
-			 * fields, such as signal strength.
-			 */
-			squirrel_wifi_frame(squirrel, frame, px+header_length, length-header_length);
-		}
-		break;
-
-	case 127: /* Radiotap headers */
-		if (length < 4) {
-			//FRAMERR(frame, "radiotap headers too short\n");
-			return;
-		}
-		{
-			unsigned version = px[0];
-			unsigned header_length = ex16le(px+2);
-			unsigned features = ex32le(px+4);
-            unsigned flags = px[16];
-			unsigned offset;
-            int dbm_noise = 0;
-            unsigned lock_quality = 0;
-
-            frame->dbm = 0;
-
-			if (version != 0 || header_length > length) {
-				FRAMERR(frame, "radiotap headers corrupt\n");
-				return;
-			}
-
-			/* If FCS is present at the end of the packet, then change
-			 * the length to remove it */
-			if (features & 0x4000) {
-				unsigned fcs_header = ex32le(px+header_length-4);
-				unsigned fcs_frame = ex32le(px+length-4);
-				if (fcs_header == fcs_frame)
-					length -= 4;
-				if (header_length >= length) {
-					FRAMERR(frame, "radiotap headers corrupt\n");
-					return;
-				}
-			}
-
-			offset = 8;
-
-			if (features & 0x000001) offset += 8;	/* TSFT - Timestamp */
-            if (features & 0x000002) {
-                flags = px[offset];
-                offset += 1;
-                
-                /* If there's an FCS at the end, then remove it so that we
-                 * don't try to decode it as payload */
-                if (flags & 0x10)
-                    length -= 4;
-            }
-			if (features & 0x000004) offset += 1;	/* Rate */	
-            if (features & 0x000008 && offset+2<header_length) {
-                unsigned frequency = ex16le(px+offset);
-                int channel;
-                channel = wifi_frequency_to_channel(frequency);
-                squirrel->sqdb->kludge.channel = channel;
-                offset += 2;	
-            }
-            if (features & 0x000008 && offset+2<header_length) {
-                /*unsigned channel_flags = ex16le(px+offset);*/
-                offset += 2;
-            }
-			if (features & 0x000010) offset += 2;	/* FHSS */	
-			if (features & 0x000020 && offset+1<header_length) {
-				frame->dbm = ((signed char*)px)[offset];
-                squirrel->sqdb->kludge.dbm = frame->dbm;
-                offset += 1;
-			}
-			if (features & 0x000040 && offset+1<header_length) {
-				dbm_noise = ((signed char*)px)[offset];
-
-			}
-			if (features & 0x000080 && offset+1<header_length) {
-				lock_quality = ((unsigned char*)px)[offset];
-			}
-
-            if (flags & 0x40) {
-                /* FCS/CRC error */
-                return;
-            }
-
-
-			squirrel_wifi_frame(squirrel, frame, px+header_length, length-header_length);
-
-		}
-		break;
-	default:
-		FRAMERR(frame, "unknown linktype = %d (expected Ethernet or wifi)\n", frame->layer2_protocol);
-		break;
-	}
-}
 
 #define REMCONNECTIONS 40960
 #define REMBUFSIZE 100000000
@@ -487,7 +310,7 @@ struct Remember {
 /**
  * Hashes the TCP connection to start the lookup in our remembrance table
  */
-static unsigned rem_hash(struct NetFrame *frame)
+static unsigned rem_hash(struct StackFrame *frame)
 {
 	unsigned result;
 
@@ -509,11 +332,13 @@ static unsigned rem_hash(struct NetFrame *frame)
  * table. If so, we know that we have a connection entry from BEFORE
  * the trigger event.
  */
-static unsigned rem_connection(struct Squirrel *squirrel, struct NetFrame *frame, uint64_t frame_number, unsigned do_track)
+static unsigned rem_connection(struct Squirrel *squirrel, struct StackFrame *frame, uint64_t frame_number, unsigned do_track)
 {
 	unsigned index;
 	struct RemConnection **r_record;
-	
+
+    UNUSEDPARM(squirrel);
+
 	index = rem_hash(frame);
 
 	r_record = &remember->connections[index];
@@ -546,8 +371,8 @@ static unsigned rem_connection(struct Squirrel *squirrel, struct NetFrame *frame
 		memset(r, 0, sizeof(*r));
 		r->src_ip = frame->src_ipv4;
 		r->dst_ip = frame->dst_ipv4;
-		r->src_port = frame->src_port;
-		r->dst_port = frame->dst_port;
+		r->src_port = (unsigned short)frame->src_port;
+		r->dst_port = (unsigned short)frame->dst_port;
 		r->trigger_frame_number = frame_number; /* the frame number where we create this entry */
 		r->next = NULL;
 	
@@ -573,11 +398,13 @@ static unsigned rem_connection(struct Squirrel *squirrel, struct NetFrame *frame
 
 
 
-unsigned rem_has_space(struct Squirrel *squirrel, const unsigned char *buf, struct NetFrame *frame)
+unsigned rem_has_space(struct Squirrel *squirrel, const unsigned char *buf, struct StackFrame *frame)
 {
 	unsigned space_needed;
 	unsigned space_remaining;
 
+    UNUSEDPARM(squirrel);
+    UNUSEDPARM(buf);
 	assert(remember->tail < REMBUFSIZE);
 
 	space_needed = sizeof(*frame) + frame->captured_length;
@@ -624,7 +451,7 @@ void rem_release_packet(struct Squirrel *squirrel)
                 | headfrm | headbuf|        | tailfrm | tailbuf |    
    ...----------+---------+--------+--------+---------+---------+--------...
 */
-	struct NetFrame *frame = (struct NetFrame*)(remember->buf + remember->tail);
+	struct StackFrame *frame = (struct StackFrame*)(remember->buf + remember->tail);
 	unsigned next_tail = remember->tail + sizeof(*frame) + frame->captured_length;
 	assert(remember->tail < REMBUFSIZE);
 
@@ -649,7 +476,7 @@ void rem_release_packet(struct Squirrel *squirrel)
 	//printf("[%d] ", remember->count);
 	assert(remember->tail < REMBUFSIZE);
 }
-void rem_save_packet(struct Squirrel *squirrel, const unsigned char *buf, struct NetFrame *frame)
+void rem_save_packet(struct Squirrel *squirrel, const unsigned char *buf, struct StackFrame *frame)
 {
 	unsigned new_head;
 	assert(remember->tail < REMBUFSIZE);
@@ -687,7 +514,7 @@ void rem_save_packet(struct Squirrel *squirrel, const unsigned char *buf, struct
 	assert(remember->tail < REMBUFSIZE);
 }
 
-void remember_packet(struct Squirrel *squirrel, const unsigned char *buf, struct NetFrame *frame)
+void remember_packet(struct Squirrel *squirrel, const unsigned char *buf, struct StackFrame *frame)
 {
 	assert(remember->tail < REMBUFSIZE);
 	while (!rem_has_space(squirrel, buf, frame)) {
@@ -704,7 +531,7 @@ void remember_none(struct Squirrel *squirrel)
 		rem_release_packet(squirrel);
 }
 
-static unsigned filtered_out(struct NetFrame *frame, const char *mac_address)
+static unsigned filtered_out(struct StackFrame *frame, const char *mac_address)
 {
 	if (frame->src_mac && memcmp(frame->src_mac, mac_address, 6) == 0)
 		return 1;
@@ -748,7 +575,7 @@ int process_file(struct Squirrel *squirrel, const char *capfilename)
 	 * Read in all the packets
 	 */
 	while (!control_c_pressed) {
-		struct NetFrame frame[1];
+		struct StackFrame frame[1];
 		unsigned x;
 
 		memset(frame,0,sizeof(*frame));
@@ -794,7 +621,7 @@ int process_file(struct Squirrel *squirrel, const char *capfilename)
 		/*
 		 * Analyze the packet
 		 */
-		squirrel_frame(squirrel, frame, buf, frame->captured_length);
+		stack_parse_frame(squirrel, frame, buf, frame->captured_length);
 		if (filtered_out(frame, "\x00\x1f\x33\xf8\x92\x2a"))
 			continue;
 		remember_packet(squirrel, buf, frame);
@@ -810,489 +637,6 @@ int process_file(struct Squirrel *squirrel, const char *capfilename)
 	return 0;
 }
 
-
-/**
- * Provide help, either an overview, or more help on a specific option.
- */
-void main_help()
-{
-	fprintf(stderr,"options:\n");
-	fprintf(stderr," -i <adapter>    Sniffs the wire(less) attached to that network adapter. \n");
-	fprintf(stderr,"                 Must have libpcap or winpcap installed to work.\n");
-	fprintf(stderr," -r <files>      Read files in off-line mode. Can use wildcards, such as \n");
-	fprintf(stderr,"                 using \"squirrel -r *.pcap\". Doesn't need libpcap to work.\n");
-	fprintf(stderr," -c <file>       Reads in more advanced parameters from a file.\n");
-}
-
-
-unsigned cfg_prefix(const char *name, const char *prefix, unsigned offset)
-{
-	unsigned i, p;
-
-	if (name[offset] == '.')
-		offset++;
-
-	for (i=offset, p=0; name[i] && prefix[p]; i++, p++)
-		if (name[i] != prefix[p])
-			return 0;
-	if (prefix[p] == '\0')
-		return i;
-	else
-		return 0;
-}
-
-static unsigned
-parse_boolean(const char *value)
-{
-	switch (value[0]) {
-	case '1': /*1*/
-	case 'y': /*yes*/
-	case 'Y': /*YES*/
-	case 'e': /*enabled*/
-	case 'E': /*ENABLED*/
-	case 't': /*true*/
-	case 'T': /*TRUE*/
-		return 1;
-	case 'o': /*on/off*/
-	case 'O': /*ON/OFF*/
-		if (value[1] == 'n' || value[1] == 'N')
-			return 1;
-	}
-	return 0;
-}
-/**
- * Parse a MAC address from hex input. It can be in a number of
- * formats, such as:
- *	[00:00:00:00:00:00]
- *  00-00-00-00-00-00
- *  000000000000
- */
-void
-parse_mac_address(unsigned char *dst, size_t sizeof_dst, const char *src)
-{
-	unsigned i=0;
-	unsigned found_non_xdigit=0;
-	unsigned premature_end=0;
-
-	if (*src == '[')
-		src++;
-
-	while (*src && i<6) {
-		if (!isxdigit(*src)) {
-			found_non_xdigit = 1;
-			src++;
-		} else {
-			unsigned c;
-
-			c = hexval(*src);
-			src++;
-			if (*src == '\0')
-				premature_end=1;
-			else if (!isxdigit(*src))
-				found_non_xdigit = 1;
-			else {
-				c = c<<4 | hexval(*src);
-				src++;
-			}
-
-			if (i<sizeof_dst)
-				dst[i++] = (unsigned char)c;
-			
-			if (*src && ispunct(*src))
-				src++;
-		}
-	}
-
-	if (found_non_xdigit)
-		fprintf(stderr, "parse_mac_address: non hex-digit found\n");
-}
-/**
- * Figures out whether the specified filename is a directory or normal
- * file. This is useful when recursing directories -- such as reading in
- * all packet-capture files in a directory structure for testing.
- */
-static int
-is_directory(const char *filename)
-{
-	struct stat s;
-
-	if (stat(filename, &s) != 0) {
-		/* Not found, so assume a "file" instead of "directory" */
-		return 0;
-	} else if (!(s.st_mode & S_IFDIR)) {
-		/* Directory flag not set, so this is a "file" not a "directory" */
-		return 0;
-	}
-	return 1;
-}
-
-void add_port_filter(unsigned **r_ports, unsigned *r_port_count, unsigned port)
-{
-	unsigned *new_ports;
-	unsigned new_count = *r_port_count + 1;
-
-	if (port >= 65536)
-		return;
-
-	new_ports = (unsigned*)malloc(sizeof(unsigned) * (new_count));
-	if (*r_ports) {
-		memcpy(new_ports, *r_ports, sizeof(unsigned) * (new_count));
-		free(*r_ports);
-	}
-	*r_ports = new_ports;
-	new_ports[*r_port_count] = port;
-	*r_port_count = new_count;
-}
-
-unsigned filter_has_port(unsigned *list, unsigned count, unsigned port)
-{
-	unsigned i;
-	for (i=0; i<count; i++) {
-		if (list[i] == port)
-			return 1;
-	}
-	return 0;
-}
-
-void 
-squirrel_set_parameter(struct Squirrel *squirrel, const char *name, const char *value, unsigned depth)
-{
-	unsigned x=0;
-
-	if (depth > 10)
-		return;
-	
-	/* This macro is defined to match the leading keyword */
-	#define MATCH(str) cfg_prefix(name, str, x) && ((x=cfg_prefix(name, str, x))>0)
-
-	if (MATCH("config")) {
-		if (MATCH("echo")) {
-			squirrel->cfg.echo = strdup(value);
-		} else if (MATCH("quiet")) {
-			squirrel->cfg.quiet = parse_boolean(value);
-		} else
-			fprintf(stderr, "%sunknown parm: %s=%s\n", "ERR:CFG: ", name, value);
-    } else
-        
-    if (MATCH("webroot")) {
-        if (squirrel->webroot)
-            free(squirrel->webroot);
-        squirrel->webroot = strdup(value);
-        {
-            char foo[512];
-            fprintf(stderr, "Set root: %s %s\n", getcwd(foo, sizeof(foo)), squirrel->webroot);
-        }
-    } else
-
-	if (MATCH("interface")) {
-		if (MATCH("checkfcs")) {
-			squirrel->cfg.interface_checkfcs = parse_boolean(value);
-		} else if (MATCH("scan")) {
-			squirrel->cfg.interface_scan = parse_boolean(value);
-		} else if (MATCH("interval")) {
-			if (MATCH("inactive"))
-				squirrel->interface_interval_inactive = (unsigned)strtoul(value,0,0);
-			else if (MATCH("active"))
-				squirrel->interface_interval_active = (unsigned)strtoul(value,0,0);
-			
-		}
-	} else if (MATCH("vector")) {
-		if (MATCH("mode")) {
-			if (strcmp(value, "none")==0)
-				squirrel->cfg.no_vectors = 1;
-		}
-	} else if (MATCH("filter")) {
-		squirrel->filter.is_filtering = 1;
-		if (MATCH("mac")) {
-			/* Parse the MAC address in the value field and add it
-			 * to the end of our list of MAC address filters.
-			 * TODO: we should probably sort these and/or check
-			 * for duplicates */
-			unsigned char **newfilters = (unsigned char**)malloc((squirrel->filter.mac_address_count+1)*sizeof(unsigned char*));
-			unsigned i;
-			for (i=0; i<squirrel->filter.mac_address_count; i++)
-				newfilters[i] = squirrel->filter.mac_address[i];
-			newfilters[i] = (unsigned char*)malloc(6);
-			memset(newfilters[i], 0xa3, 6);
-			parse_mac_address(newfilters[i], 6, value);
-			if (squirrel->filter.mac_address)
-				free(squirrel->filter.mac_address);
-			squirrel->filter.mac_address = newfilters;
-			squirrel->filter.mac_address_count++;
-		} else if (MATCH("ssh")) {
-			squirrel->filter.is_ssh = 1;
-			squirrel->filter.something_tcp = 1;
-		} else if (MATCH("tcp")) {
-			add_port_filter(&squirrel->filter.tcp_ports, &squirrel->filter.tcp_port_count, (int)strtol(value,0,0));
-			squirrel->filter.something_tcp = 1;
-		} else if (MATCH("udp")) {
-			add_port_filter(&squirrel->filter.udp_ports, &squirrel->filter.udp_port_count, (int)strtol(value,0,0));
-		} else if (MATCH("snap.oui")) {
-			add_port_filter(&squirrel->filter.snap_ouis, &squirrel->filter.snap_oui_count, (int)strtol(value,0,0));
-		} else
-			printf("unknowwn filter %s\n", name);
-	} else if (MATCH("include")) {
-		FILE *fp;
-		char line[2048];
-
-		fp = fopen(value, "rt");
-		if (fp == NULL) {
-			fprintf(stderr, "%sreading configuration file\n", "ERR:CFG: ");
-			perror(value);
-			return;
-		}
-
-		while (fgets(line, sizeof(line), fp)) {
-			char *name;
-			char *value;
-
-			name = line;
-			value = strchr(line, '=');
-			if (value == NULL)
-				continue;
-			*value = '\0';
-			value++;
-
-			while (*name && isspace(*name))
-				memmove(name, name+1, strlen(name));
-			while (*value && isspace(*value))
-				memmove(value, value+1, strlen(value));
-			while (*name && isspace(name[strlen(name)-1]))
-				name[strlen(name)-1] = '\0';
-			while (*value && isspace(value[strlen(value)-1]))
-				value[strlen(value)-1] = '\0';
-
-			squirrel_set_parameter(squirrel, name, value, depth+1);
-
-		}
-	} else if (MATCH("statistics")) {
-		squirrel->cfg.statistics_print = parse_boolean(value);
-	} else if (MATCH("sniffer")) {
-		if (MATCH("dir")) {
-			const char *directory_name = value;
-			size_t directory_length = strlen(directory_name);
-			char *p;
-
-			if (directory_length > sizeof(squirrel->output.directory)-1) {
-				fprintf(stderr, "%sparameter too long: %s=%s\n", "ERR:CFG: ", name, value);
-				return;
-			}
-			if (squirrel->output.directory[0]) {
-				fprintf(stderr, "%sparameter exists: old: %s=%s\n", "ERR:CFG: ", name, squirrel->output.directory);
-				fprintf(stderr, "%sparameter exists: new: %s=%s\n", "ERR:CFG: ", name, value);
-				return;
-			}
-
-			/* Remove trailing spaces and slashes */
-			p = squirrel->output.directory;
-			while (*p && (isspace(p[strlen(p)-1]) || p[strlen(p)-1]=='/' || p[strlen(p)-1]=='\\'))
-				p[strlen(p)-1] = '\0';
-
-			strcpy_s(squirrel->output.directory, sizeof(squirrel->output.directory), directory_name);
-			return;
-		} else if (MATCH("filename")) {
-			if (is_directory(value)) {
-				squirrel_set_parameter(squirrel, "sniffer.directory", value, depth);
-				return;
-			}
-			strcpy_s(squirrel->output.filename, sizeof(squirrel->output.filename), value);
-			if (squirrel->output.sniff == FERRET_SNIFF_NONE)
-				squirrel->output.sniff = FERRET_SNIFF_MOST;
-			if (squirrel->output.noappend == 0)
-				squirrel->output.noappend = 1;
-		} else if (MATCH("mode")) {
-			if (strcmp(value, "all")==0)
-				squirrel->output.sniff = FERRET_SNIFF_ALL;
-			else if (strcmp(value, "most")==0)
-				squirrel->output.sniff = FERRET_SNIFF_MOST;
-			else if (strcmp(value, "ivs")==0)
-				squirrel->output.sniff = FERRET_SNIFF_IVS;
-			else if (strcmp(value, "sift")==0)
-				squirrel->output.sniff = FERRET_SNIFF_SIFT;
-			else if (strcmp(value, "none")==0)
-				squirrel->output.sniff = FERRET_SNIFF_NONE;
-			else {
-				fprintf(stderr, "%sparameter unknown: %s=%s\n", "ERR:CFG: ", name, value);
-				return;
-			}
-		} else if (MATCH("noappend")) {
-			squirrel->output.noappend = parse_boolean(value);
-		} else
-			fprintf(stderr, "%sunknown parm: %s=%s\n", "ERR:CFG: ", name, value);
-	} else if (MATCH("snarfer")) {
-		if (MATCH("dir")) {
-			const char *directory_name = value;
-			size_t directory_length = strlen(directory_name);
-			char *p;
-
-			if (directory_length > sizeof(squirrel->snarfer.directory)-1) {
-				fprintf(stderr, "%sparameter too long: %s=%s\n", "ERR:CFG: ", name, value);
-				return;
-			}
-			if (squirrel->snarfer.directory[0]) {
-				fprintf(stderr, "%sparameter exists: old: %s=%s\n", "ERR:CFG: ", name, squirrel->snarfer.directory);
-				fprintf(stderr, "%sparameter exists: new: %s=%s\n", "ERR:CFG: ", name, value);
-				return;
-			}
-
-			/* Remove trailing spaces and slashes */
-			p = squirrel->snarfer.directory;
-			while (*p && (isspace(p[strlen(p)-1]) || p[strlen(p)-1]=='/' || p[strlen(p)-1]=='\\'))
-				p[strlen(p)-1] = '\0';
-
-			strcpy_s(squirrel->snarfer.directory, sizeof(squirrel->snarfer.directory), directory_name);
-			return;
-		} else if (MATCH("mode")) {
-			if (strcmp(value, "all")==0)
-				squirrel->snarfer.mode = FERRET_SNIFF_ALL;
-			else if (strcmp(value, "most")==0)
-				squirrel->snarfer.mode = FERRET_SNIFF_MOST;
-			else if (strcmp(value, "none")==0)
-				squirrel->snarfer.mode = FERRET_SNIFF_NONE;
-			else {
-				fprintf(stderr, "%sparameter unknown: %s=%s\n", "ERR:CFG: ", name, value);
-				return;
-			}
-		} else
-			fprintf(stderr, "%sunknown parm: %s=%s\n", "ERR:CFG: ", name, value);
-
-	} else
-		fprintf(stderr, "%sunknown parm: %s=%s\n", "ERR:CFG: ", name, value);
-
-}
-
-
-/**
- * Parse the command-line arguments
- */
-static void 
-main_args(int argc, char **argv, struct Squirrel *squirrel)
-{
-	int i;
-
-	for (i=1; i<argc; i++) {
-		const char *arg = argv[i];
-
-		/* See if a <name=value> style configuration parameter was 
-		 * given on the command-line */
-		if (arg[0] != '-' && strchr(argv[i],'=')) {
-			char name[256];
-			size_t name_length;
-			const char *value;
-			unsigned j;
-
-			/* Extract the name */
-			name_length = strchr(argv[i], '=') - argv[i];
-			if (name_length > sizeof(name)-1)
-				name_length = sizeof(name)-1;
-			memcpy(name, argv[i], name_length);
-			while (name_length && isspace(name[name_length-1]))
-				name_length--;
-			while (name_length && isspace(name[0]))
-				memmove(name, name+1, --name_length);
-			name[name_length] = '\0';
-			for (j=0; j<name_length; j++)
-				name[j] = (char)tolower(name[j]);
-			
-			/* Extract the value */
-			value = strchr(argv[i],'=') + 1;
-			while (*value && isspace(*value))
-				value++;
-
-			/* Set the configuration parameter */
-			squirrel_set_parameter(squirrel, name, value,1);
-
-			continue; /*loop to next command-line parameter*/
-		}
-
-		if (arg[0] != '-')
-			continue;
-
-		if (arg[1] == '-') {
-            if (strcasecmp_s(arg, "--server") == 0)
-                squirrel_set_parameter(squirrel, "mode", "server", 0);
-            else if (strcasecmp_s(arg, "--webroot") == 0)
-                squirrel_set_parameter(squirrel, "webroot", argv[++i], 0);
-			continue;
-		}
-
-		switch (arg[1]) {
-		case 'c':
-			if (arg[2] == '\0')
-				squirrel_set_parameter(squirrel, "include", argv[++i], 0);
-			else
-				squirrel_set_parameter(squirrel, "include", argv[i]+2, 0);
-			break;
-		case 'd':
-			debug++;
-			break;
-		case 'h':
-		case 'H':
-		case '?':
-			main_help();
-			exit(0);
-			break;
-
-		case 'q':
-			squirrel_set_parameter(squirrel, "config.quiet", "true", 0);
-			break;
-
-		case 'F':
-			squirrel_set_parameter(squirrel, "interface.checkfcs", "true", 0);
-			break;
-		case 'S':
-			squirrel_set_parameter(squirrel, "statistics.print", "true", 0);
-			break;
-
-		case 'r':
-			if (squirrel->is_live) {
-				fprintf(stderr,"ERROR: cannot process live and offline data at the same time\n");
-				squirrel->is_error = 1;
-			}
-			squirrel->is_offline = 1;
-			if (argv[i][2] == '\0') {
-				while (i+1<argc) {
-					const char *filename = argv[i+1];
-					if (filename[0] == '-' || strchr(filename, '='))
-						break;
-					else
-						i++;
-				}
-			}
-			break;
-		case 'i':
-			if (squirrel->is_offline) {
-				fprintf(stderr,"Cannot process live and offline data at the same time\n");
-				squirrel->is_error = 1;
-			} else {
-				if (arg[2] == '\0' && i+1<argc) {
-					strcpy_s(squirrel->interface_name, sizeof(squirrel->interface_name), argv[i+1]);
-					i++;
-					squirrel->is_live = 1;
-					/* TODO: validate*/
-				} else if (isdigit(arg[2])) {
-					strcpy_s(squirrel->interface_name, sizeof(squirrel->interface_name), arg+2);
-					squirrel->is_live = 1;
-				} else {
-					fprintf(stderr, "%s: invalid argument, expected something like \"-i1\" or \"-i eth0\"\n", argv[i]);
-					squirrel->is_error = 1;
-				}
-			}
-			break;
-		case 'W':
-			squirrel->is_live = 1;
-			break;
-		case 'w':
-			if (arg[2] == '\0')
-				squirrel_set_parameter(squirrel, "sniffer.filename", argv[++i], 0);
-			else
-				squirrel_set_parameter(squirrel, "sniffer.filename", argv[i]+2, 0);
-			
-			squirrel_set_parameter(squirrel, "sniffer.mode", "most", 0);
-			break;
-		}
-	}
-}
 
 static unsigned count_digits(uint64_t n)
 {
@@ -1358,6 +702,8 @@ display_monitor(struct mg_connection *c, const struct mg_request_info *ri, void 
 {
 	/*struct Squirrel *squirrel = (struct Squirrel *)user_data;*/
 	char errbuf[1024];
+    UNUSEDPARM(ri);
+    UNUSEDPARM(user_data);
 
 	mg_headers_ok(c, "text/html");
 	X(c, "Connection: close\r\n");
@@ -1478,8 +824,14 @@ unsigned squirrel_get_interface_status(struct Squirrel *squirrel, const char *de
 void pcapHandlePacket(unsigned char *v_seap, 
     const struct pcap_pkthdr *framehdr, const unsigned char *buf)
 {
-	static struct NetFrame frame[1];
+	static struct StackFrame frame[1];
 	struct Squirrel *squirrel = (struct Squirrel*)v_seap;
+    static int is_packet_seen = 0;
+
+    if (is_packet_seen) {
+        is_packet_seen = 1;
+        fprintf(stderr, "[+] packet captured\n");
+    }
 
 	memset(frame,0,sizeof(*frame));
 
@@ -1495,7 +847,7 @@ void pcapHandlePacket(unsigned char *v_seap,
     frame->px = buf;
 
 	/* Wrap in try/catch block */
-	squirrel_frame(squirrel, frame, buf, frame->captured_length);
+	stack_parse_frame(squirrel, frame, buf, frame->captured_length);
 
 	if (filtered_out(frame, "\x00\x1f\x33\xf8\x92\x2a"))
 		return;
@@ -1533,6 +885,7 @@ wifi_set_channel(void *hPcap, unsigned channel, const char *interface_name)
 	{
 		char cmd[256];
 		int result;
+        UNUSEDPARM(hPcap);
 		sprintf_s(cmd, sizeof(cmd), "iwconfig %s channel %u\n", interface_name, channel);
 		fprintf(stderr, "CHANGE: %s", cmd);
 		result = system(cmd);
@@ -1557,6 +910,7 @@ wifi_set_channel(void *hPcap, unsigned channel, const char *interface_name)
     {
         char cmd[256];
         int result;
+        UNUSEDPARM(hPcap);
         sprintf_s(cmd, sizeof(cmd), "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport %s -c%d\n", interface_name, channel);
         fprintf(stderr, "CHANGE: %s", cmd);
         result = system(cmd);
@@ -1589,8 +943,6 @@ void squirrel_monitor_thread(void *user_data)
 	clock_t old_scan_time = clock();
 	unsigned old_scan_channel = 1;
 
-	fprintf(stderr, "Monitor thread start\n");
-	
 	/* Get the configured channel, if there is one */
 	squirrel_get_interface_status(squirrel, devicename, &interface_channel);
 
@@ -1608,29 +960,29 @@ void squirrel_monitor_thread(void *user_data)
     hPcap = pcap.create(devicename, errbuf);
     if (hPcap == NULL) {
 		squirrel_set_interface_status(squirrel, devicename, 0, interface_channel);
-		fprintf(stderr, "%s: %s\n", devicename, errbuf);
+		fprintf(stderr, "[-] %s: %s\n", devicename, errbuf);
 		return;
 	}
-    fprintf(stderr, "set_snaplen\n"); fflush(stderr);
+    //fprintf(stderr, "set_snaplen\n"); fflush(stderr);
     pcap.set_snaplen(hPcap, 4096);
     pcap.set_promisc(hPcap, 1);
     pcap.set_timeout(hPcap, 10);
     pcap.set_immediate_mode(hPcap, 1);
     
     if (pcap.can_set_rfmon(hPcap) == 1) {
-        fprintf(stderr, "%s: setting monitor mode\n", devicename);
         pcap.set_rfmon(hPcap, 1);
-        pcap.set_datalink(hPcap, 127);
+        //pcap.set_datalink(hPcap, 127);
+    } else {
+        fprintf(stderr, "[-] %s: can't set monitor mode\n", devicename);
     }
 
     pcap.activate(hPcap);
     squirrel_set_interface_status(squirrel, devicename, 1, interface_channel);
-    fprintf(stderr, "%s: monitoring\n", devicename);
+    //fprintf(stderr, "[+] %s: monitoring\n", devicename);
 
 
 	squirrel->linktype = pcap.datalink(hPcap);
-	fprintf(stderr, "SNIFFING: %s\n", devicename);
-	fprintf(stderr, "LINKTYPE: %d %s\n", squirrel->linktype, get_link_name_from_type(squirrel->linktype));
+	fprintf(stderr, "[ ] %s: linktype=%d (%s)\n", devicename, squirrel->linktype, get_link_name_from_type(squirrel->linktype));
 
 
     /* 
@@ -1680,7 +1032,7 @@ void squirrel_monitor_thread(void *user_data)
 			break;
         total_packets_processed += packets_read;
         if (!traffic_seen && total_packets_processed > 0) {
-            fprintf(stderr, "Traffic seen\n");
+            fprintf(stderr, "[+] Traffic seen\n");
             traffic_seen = 1;
         }
     }
@@ -1688,7 +1040,7 @@ void squirrel_monitor_thread(void *user_data)
     /* Close the file and go onto the next one */
     pcap.close(hPcap);
 	squirrel_set_interface_status(squirrel, devicename, 0, interface_channel);
-	printf("****end monitor thread %s****\n", devicename);
+	fprintf(stderr, "\n[-] %s: ****end monitor thread****\n", devicename);
 }
 
 void launch_thread(struct Squirrel *squirrel, const char *adapter_name)
@@ -1697,16 +1049,16 @@ void launch_thread(struct Squirrel *squirrel, const char *adapter_name)
 	struct MonitorThread *mt = (struct MonitorThread*)malloc(sizeof(*mt));
 	memset(mt, 0, sizeof(*mt));
 	sprintf_s(mt->devicename, sizeof(mt->devicename), "%s", adapter_name);
-	fprintf(stderr, "Starting monitor thread for \"%s\"\n", adapter_name);
+
 #ifdef WIN32
 	mt->drivername = "airpcap";
 #endif
 	mt->squirrel = squirrel;
 	result = pixie_begin_thread(squirrel_monitor_thread, 0, mt);
 	if (result != 0)
-		fprintf(stderr, "Error starting thread\n");
-	else
-		fprintf(stderr, "Thread started\n");
+		fprintf(stderr, "[-] %s: Error starting thread\n", adapter_name);
+	/*else
+		fprintf(stderr, "[+] %s: monitoring\n", adapter_name);*/
 }
 
 
@@ -1718,8 +1070,8 @@ int main(int argc, char **argv)
 	int i;
 	struct Squirrel *squirrel;
 
-	fprintf(stderr, "-- wifi-mon 1.2 - 2008-2018 (c) Robert Graham\n");
-	fprintf(stderr, "-- build = %s %s (%u-bits)\n", __DATE__, __TIME__, (unsigned)sizeof(size_t)*8);
+	fprintf(stderr, "[+] wifi-mon 1.3 - 2008-2022 (c) Robert Graham\n");
+	/*fprintf(stderr, "-- build = %s %s (%u-bits)\n", __DATE__, __TIME__, (unsigned)sizeof(size_t)*8);*/
 
     /*
      * Load manufacturer IDs
@@ -1736,8 +1088,6 @@ int main(int argc, char **argv)
 	 */
 	signal(SIGINT, control_c_handler);
     signal(SIGPIPE, SIG_IGN);
-    //signal(SIGPIPE, sigpipe_handler);
-    
     
 	/*
 	 * Runtime-load the libpcap shared-object or the winpcap DLL. We
@@ -1747,11 +1097,11 @@ int main(int argc, char **argv)
 	 */
 	pcaplive_init(&pcap);
 	if (!pcap.is_available) {
-		fprintf(stderr,"WinPcap is not available. Please install it from: http://www.winpcap.org/\n");
-		fprintf(stderr,"Without WinPcap, you can process capture packet capture files (offline mode), \n");
-		fprintf(stderr,"but you will not be able to monitor the network (live mode).\n");
+		fprintf(stderr,"[-] WinPcap is not available. Please install it from: http://www.winpcap.org/\n");
+		fprintf(stderr,"    Without WinPcap, you can process capture packet capture files (offline mode), \n");
+		fprintf(stderr,"    but you will not be able to monitor the network (live mode).\n");
 	} else {
-		fprintf(stderr,"-- %s\n", pcap.lib_version());
+		fprintf(stderr,"[+] %s\n", pcap.lib_version());
 	}
 
 
@@ -1767,7 +1117,7 @@ int main(int argc, char **argv)
 	 * Parse the command-line arguments. This many also parse the configuration
 	 * file that contains more difficult options.
 	 */
-	main_args(argc, argv, squirrel);
+	main_conf(argc, argv, squirrel);
 
 
 	/* 
@@ -1847,18 +1197,21 @@ int main(int argc, char **argv)
 	 * Hardcode monitor thread for testing
 	 */
 	if (squirrel->is_live) {
-		printf("5\n");
-		fprintf(stderr, "Starting monitor thread\n");
+		//fprintf(stderr, "Starting monitor thread\n");
 		launch_thread(squirrel, squirrel->interface_name);
 	}
 
-	{unsigned i=0;
-	while (!control_c_pressed) {
-		printf("%c\x08", "|\\-/"[i&0x03]);
-		fflush(stdout);
-		i++;
-		pixie_sleep(1000);
-	}
+    /*
+     * TWIRLING status on command-line
+     */
+	{
+        unsigned j=0;
+        while (!control_c_pressed) {
+            fprintf(stderr, "%c\x08", "|\\-/"[j&0x03]);
+            fflush(stderr);
+            j++;
+            pixie_sleep(1000);
+        }
 	}
 
 	squirrel_destroy(squirrel);
