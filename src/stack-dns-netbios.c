@@ -188,11 +188,11 @@ void netbios_parse_resource_record(struct Squirrel *squirrel, struct StackFrame 
                             continue;
                         if (endsWith(tmpname, "\x01\x02__MSBROWSE__\x02<01>"))
                             continue;
-                        sqdb_add_info(	squirrel->sqdb, 
-			                    frame->src_mac,
-			                    frame->bss_mac,
-			                    "name",
-			                    tmpname, -1);
+                        sqdb_add_info(squirrel->sqdb,
+                                      frame->src_mac,
+                                      frame->wifi.bss_mac,
+                                      "name",
+                                      tmpname, -1);
 				    }
                 }
 			}

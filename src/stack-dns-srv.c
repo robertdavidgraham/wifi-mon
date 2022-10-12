@@ -370,11 +370,11 @@ void dnssrv_parse_resource_record(struct Squirrel *squirrel, struct StackFrame *
                 char *p = strchr(tmpname, '.');
                 *p = '\0';
             }
-            sqdb_add_info(	squirrel->sqdb, 
-			        frame->src_mac,
-			        frame->bss_mac,
-			        "name",
-			        tmpname, -1);
+            sqdb_add_info(squirrel->sqdb,
+                          frame->src_mac,
+                          frame->wifi.bss_mac,
+                          "name",
+                          tmpname, -1);
         }
 
 		break;

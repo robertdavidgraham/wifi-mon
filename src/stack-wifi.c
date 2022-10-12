@@ -581,20 +581,20 @@ void squirrel_get_mac_address(struct StackFrame *frame, const unsigned char *px,
 	case 0:
 		frame->dst_mac  = px+4;
 		frame->src_mac  = px+10;
-		frame->bss_mac	= px+16;
+		frame->wifi.bss_mac	= px+16;
 		break;
 	case 1:
-		frame->bss_mac	= px+4;
+		frame->wifi.bss_mac	= px+4;
 		frame->src_mac  = px+10;
 		frame->dst_mac  = px+16;
 		break;
 	case 2:
 		frame->dst_mac  = px+4;
-		frame->bss_mac	= px+10;
+		frame->wifi.bss_mac	= px+10;
 		frame->src_mac  = px+16;
 		break;
 	case 3:
-		frame->bss_mac = (const unsigned char*)"\0\0\0\0\0\0";
+		frame->wifi.bss_mac = (const unsigned char*)"\0\0\0\0\0\0";
 		frame->dst_mac   = px+16;
 		frame->src_mac   = px+24;
 		break;
@@ -728,10 +728,10 @@ void squirrel_wifi_proberequest(struct Squirrel *squirrel, struct StackFrame *fr
 			frame->dst_mac[0], frame->dst_mac[1], frame->dst_mac[2], 
 			frame->dst_mac[3], frame->dst_mac[4], frame->dst_mac[5]
 			);
-	if (memcmp(frame->bss_mac, "\xff\xff\xff\xff\xff\xff", 6) != 0)
+	if (memcmp(frame->wifi.bss_mac, "\xff\xff\xff\xff\xff\xff", 6) != 0)
 		FRAMERR(frame, "wifi.probe: destination %02x:%02x:%02x:%02x:%02x:%02x\n", 
-			frame->bss_mac[0], frame->bss_mac[1], frame->bss_mac[2], 
-			frame->bss_mac[3], frame->bss_mac[4], frame->bss_mac[5]
+			frame->wifi.bss_mac[0], frame->wifi.bss_mac[1], frame->wifi.bss_mac[2], 
+			frame->wifi.bss_mac[3], frame->wifi.bss_mac[4], frame->wifi.bss_mac[5]
 			);
 	*/
 
@@ -779,7 +779,7 @@ void squirrel_wifi_proberequest(struct Squirrel *squirrel, struct StackFrame *fr
                                pkt->type,
                                standard,
                                channel_width);
-		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+        regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 	}
 }
 
@@ -808,8 +808,8 @@ void squirrel_wifi_associate_request(struct Squirrel *squirrel, struct StackFram
 	/* Extract addresses */
 	frame->dst_mac = px+4;
 	frame->src_mac = px+10;
-	frame->bss_mac = px+16;
-	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+	frame->wifi.bss_mac = px+16;
+    regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 
 	/* Parse data fields */
 	flags = ex16le(px+24);
@@ -835,14 +835,14 @@ void squirrel_wifi_associate_request(struct Squirrel *squirrel, struct StackFram
 	 * Register the fact that we've seen this base station and its probable
 	 * SSID.
 	 */
-	regmac_base(squirrel->sqdb, frame->bss_mac, frame->dst_mac);
+	regmac_base(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac);
 
 	/*
 	 * Register the fact that we've seen this client, that the client was
 	 * attempting to access this base station, and that the client wanted
 	 * to contact this SSID
 	 */
-	regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, DIR_STA_TO_BASE);
+	regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, DIR_STA_TO_BASE);
 
 	/*
 	 * Extract the SSID from the information element
@@ -851,7 +851,7 @@ void squirrel_wifi_associate_request(struct Squirrel *squirrel, struct StackFram
 	if (ie.px) {
 		struct SQDB_String ssid;
 		ssid = ie_to_string(ie);
-		regmac_base_ssid(squirrel->sqdb, frame->bss_mac, &ssid);
+		regmac_base_ssid(squirrel->sqdb, frame->wifi.bss_mac, &ssid);
 	}
 
     /*
@@ -859,7 +859,7 @@ void squirrel_wifi_associate_request(struct Squirrel *squirrel, struct StackFram
      */
     regmac_event(squirrel->sqdb, 
         EVENT_ASSOC,
-        frame->bss_mac, frame->src_mac,
+        frame->wifi.bss_mac, frame->src_mac,
         EVENT_ASSOC_REQ, frame);
 
 
@@ -889,7 +889,7 @@ void squirrel_wifi_associate_response(struct Squirrel *squirrel, struct StackFra
 
 	frame->dst_mac = px+4;
 	frame->src_mac = px+10;
-	frame->bss_mac = px+16;
+	frame->wifi.bss_mac = px+16;
 
 	flags = ex16le(px+24);
 	status = ex16le(px+26);
@@ -912,16 +912,16 @@ void squirrel_wifi_associate_response(struct Squirrel *squirrel, struct StackFra
 	}
 
 
-	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
-	regmac_base(squirrel->sqdb, frame->bss_mac, frame->src_mac);
-	regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, DIR_BASE_TO_STA);
+    regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
+	regmac_base(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac);
+	regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, DIR_BASE_TO_STA);
 
 	/* SSID: probably doesn't exist */
 	ie = get_information_element(px, offset, length, 0x00);
 	if (ie.px) {
 		struct SQDB_String ssid;
 		ssid = ie_to_string(ie);
-		regmac_base_ssid(squirrel->sqdb, frame->bss_mac, &ssid);
+		regmac_base_ssid(squirrel->sqdb, frame->wifi.bss_mac, &ssid);
 	}
 
 	/* SUPPORTED RATES: probably exists */
@@ -929,13 +929,13 @@ void squirrel_wifi_associate_response(struct Squirrel *squirrel, struct StackFra
 	if (ie.px) {
 		struct SQDB_RateList rates;
 		rates = ie_to_rate_list(ie);
-		regmac_base_rates(squirrel->sqdb, frame->bss_mac, &rates, 0);
+		regmac_base_rates(squirrel->sqdb, frame->wifi.bss_mac, &rates, 0);
 	}
 	ie = get_information_element(px, offset, length, 0x32); 
 	if (ie.px) {
 		struct SQDB_RateList rates;
 		rates = ie_to_rate_list(ie);
-		regmac_base_rates(squirrel->sqdb, frame->bss_mac, 0, &rates);
+		regmac_base_rates(squirrel->sqdb, frame->wifi.bss_mac, 0, &rates);
 	}
 
     /*
@@ -943,7 +943,7 @@ void squirrel_wifi_associate_response(struct Squirrel *squirrel, struct StackFra
      */
     regmac_event(squirrel->sqdb, 
         EVENT_ASSOC,
-        frame->bss_mac, frame->dst_mac,
+        frame->wifi.bss_mac, frame->dst_mac,
         EVENT_ASSOC_RSP, frame);
 
 }
@@ -970,15 +970,15 @@ void squirrel_wifi_authentication(struct Squirrel *squirrel, struct StackFrame *
 
 	frame->dst_mac = px+4;
 	frame->src_mac = px+10;
-	frame->bss_mac = px+16;
-	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+	frame->wifi.bss_mac = px+16;
+    regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 
 
 	/*
 	 * Only look at packets coming from the base/access-point, because that
 	 * tells us what authentication they require
 	 */
-	dir = regmac_base_resolve_direction(squirrel->sqdb, frame->bss_mac, frame->src_mac, frame->dst_mac);
+	dir = regmac_base_resolve_direction(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, frame->dst_mac);
 
 	/*
 	 * If the status isn't "OK", the drop this
@@ -1015,7 +1015,7 @@ void squirrel_wifi_authentication(struct Squirrel *squirrel, struct StackFrame *
 		return;
 	}
 
-	regmac_base_crypto(squirrel->sqdb, frame->bss_mac, auth_type);
+	regmac_base_crypto(squirrel->sqdb, frame->wifi.bss_mac, auth_type);
 
     /*
      * Record this event
@@ -1023,12 +1023,12 @@ void squirrel_wifi_authentication(struct Squirrel *squirrel, struct StackFrame *
     if (dir == DIR_STA_TO_BASE) {
         regmac_event(squirrel->sqdb, 
             EVENT_ASSOC,
-            frame->bss_mac, frame->src_mac,
+            frame->wifi.bss_mac, frame->src_mac,
             EVENT_AUTH_REQ, frame);
     } else if (dir == DIR_BASE_TO_STA) {
         regmac_event(squirrel->sqdb, 
             EVENT_ASSOC,
-            frame->bss_mac, frame->dst_mac,
+            frame->wifi.bss_mac, frame->dst_mac,
             EVENT_AUTH_RSP, frame);
     } else
         FRAMERR(frame, "unknown\n");
@@ -1060,8 +1060,8 @@ void squirrel_wifi_mgmt_action(struct Squirrel *squirrel, struct StackFrame *fra
 	/* Extract the addresses */
 	frame->dst_mac = px+4;
 	frame->src_mac = px+10;
-	frame->bss_mac = px+16;
-	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+	frame->wifi.bss_mac = px+16;
+	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 
 	action_type = px[24];
     SIFT_UNSIGNED("wlan.fixed.category_code", action_type);
@@ -1083,12 +1083,12 @@ void squirrel_wifi_mgmt_action(struct Squirrel *squirrel, struct StackFrame *fra
             FRAMERR(frame, "wifi.data: unknown action category code: 0x%04x\n", action_type);
 	}
 
-	if (memcmp(frame->src_mac, frame->bss_mac, 6) != 0) {
+	if (memcmp(frame->src_mac, frame->wifi.bss_mac, 6) != 0) {
 		/* Ref: wifi-2009-02-09.pcap(14385) */
-		regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, DIR_STA_TO_BASE);
-	} else if (memcmp(frame->dst_mac, frame->bss_mac, 6) != 0) {
+		regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, DIR_STA_TO_BASE);
+	} else if (memcmp(frame->dst_mac, frame->wifi.bss_mac, 6) != 0) {
 		/* Ref: wifi-2009-02-09.pcap(14379) */
-		regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, DIR_BASE_TO_STA);
+		regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, DIR_BASE_TO_STA);
 	} else {
 		FRAMERR(frame, "%s: unexpected contents\n", "mgmt.action");
 	}
@@ -1122,13 +1122,13 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct StackFrame
 	/* Extract addresses */
 	frame->dst_mac = px+4;
 	frame->src_mac = px+10;
-	frame->bss_mac = px+16;
+	frame->wifi.bss_mac = px+16;
 
 	/*
 	 * Only look at packets coming from the base/access-point, because that
 	 * tells us what authentication they require
 	 */
-	dir = regmac_base_resolve_direction(squirrel->sqdb, frame->bss_mac, frame->src_mac, frame->dst_mac);
+	dir = regmac_base_resolve_direction(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, frame->dst_mac);
 
     /*
      * Record this event
@@ -1136,12 +1136,12 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct StackFrame
     if (dir == DIR_BASE_TO_STA) {
         regmac_event(squirrel->sqdb, 
             EVENT_DEAUTH,
-            frame->bss_mac, frame->dst_mac,
+            frame->wifi.bss_mac, frame->dst_mac,
             EVENT_DEAUTH_FROM_AP, frame);
     } else if (dir == DIR_STA_TO_BASE) {
         regmac_event(squirrel->sqdb, 
             EVENT_DEAUTH,
-            frame->bss_mac, frame->src_mac,
+            frame->wifi.bss_mac, frame->src_mac,
             EVENT_DEAUTH_FROM_STA, frame);
     }
 
@@ -1151,9 +1151,9 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct StackFrame
 	case 0x0001: /* Unspecified reason */
 		/* REF: sniff-2009-02-09-127.pcap(2912) */
 		if (dir == DIR_BASE_TO_STA)
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, dir);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, dir);
 		else if (dir == DIR_STA_TO_BASE)
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, dir);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, dir);
 		else
 			FRAMERR(frame, "deauth: unknow direction\n");
 		break;
@@ -1161,23 +1161,23 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct StackFrame
 		/* Sent from AP to STA telling it that it's previous authentication has expired 
 		 * REF: sniff-2009-02-09-127.pcap(2516) */
         if (dir == DIR_BASE_TO_STA) {
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, dir);                
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, dir);                
         } else if (dir == DIR_STA_TO_BASE) {
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, dir);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, dir);
         } else
 			FRAMERR(frame, "deauth: unknow direction\n");
 		break;
 	case 0x0003: /* Station leaving (or has left) ESSID/BSSID */
 		/* Sent from STA to AP telling it that it is about to leave the system */
 		if (dir == DIR_STA_TO_BASE)
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, dir);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, dir);
         else
             ; //FRAMERR(frame, "deauth: unknow direction\n");
 		break;
 	case 0x0004: /* Disassociated due to inactivity */
 		/* Sent from AP to STA telling it that it is being disconnected because it's inactive */
 		if (dir == DIR_BASE_TO_STA)
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, dir);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, dir);
 		else
 			FRAMERR(frame, "deauth: unknow direction\n");
 		break;
@@ -1185,7 +1185,7 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct StackFrame
 		/* Sent from AP to STA telling it that it is not authenticated */
 		/* REF: sniff-2009-02-09-127.pcap */
 		if (dir == DIR_BASE_TO_STA)
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, dir);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, dir);
 		else
             ;//FRAMERR(frame, "deauth: unknow direction\n");
 		break;
@@ -1199,7 +1199,7 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct StackFrame
 		/* REF: wifi-2009-02-09.pcap(379754) 
 		 * Deauthentication 4-way handshake timeout */
 		if (dir == DIR_BASE_TO_STA)
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, dir);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, dir);
 		else
 			FRAMERR(frame, "deauth: unknow direction\n");
 		break;
@@ -1207,7 +1207,7 @@ void squirrel_wifi_deauthentication(struct Squirrel *squirrel, struct StackFrame
             ;//FRAMERR(frame, "wifi.data: unknown deauth reason: 0x%04x\n", reason);
 	}
 
-	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 }
 
 void squirrel_wifi_disassociate(struct Squirrel *squirrel, struct StackFrame *frame, const unsigned char *px, unsigned length)
@@ -1237,14 +1237,14 @@ void squirrel_wifi_disassociate(struct Squirrel *squirrel, struct StackFrame *fr
 	/* Extract Addresses */
 	frame->dst_mac = px+4;
 	frame->src_mac = px+10;
-	frame->bss_mac = px+16;
-	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+	frame->wifi.bss_mac = px+16;
+	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 
 	/*
 	 * Only look at packets coming from the base/access-point, because that
 	 * tells us what authentication they require
 	 */
-	dir = regmac_base_resolve_direction(squirrel->sqdb, frame->bss_mac, frame->src_mac, frame->dst_mac);
+	dir = regmac_base_resolve_direction(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, frame->dst_mac);
 
 	reason = ex16le(px+24);
     SIFT_UNSIGNED("wlan.fixed.reason_code", reason);
@@ -1253,7 +1253,7 @@ void squirrel_wifi_disassociate(struct Squirrel *squirrel, struct StackFrame *fr
 		/* Sent from STA to AP telling it that it is about to leave the system 
 		 * REF: sniff-2009-02-09-127.pcap(274351) */
 		if (dir == DIR_STA_TO_BASE)
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, dir);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, dir);
 		else
 			FRAMERR(frame, "deauth: unknow direction\n");
 		break;
@@ -1291,15 +1291,15 @@ void squirrel_wifi_ctrl_power_save_poll(struct Squirrel *squirrel, struct StackF
 	}
 
 	/* Get MAC addresses */
-	frame->bss_mac = px+4;
+	frame->wifi.bss_mac = px+4;
 	frame->dst_mac = px+4;
 	frame->src_mac = px+10;
 
-	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+	regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 
 	/* Remember the fact that we saw this station connected to this
 	 * BSSID */
-	regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, DIR_STA_TO_BASE);
+	regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, DIR_STA_TO_BASE);
 }
 
 /**
@@ -1336,7 +1336,7 @@ void squirrel_wifi_ctrl_frame(struct Squirrel *squirrel, struct StackFrame *fram
 	 * first */
 	receiver = px+4;
 	transmitter = px+10;
-	regmac_transmit_power(squirrel->sqdb, transmitter, frame->dbm, frame->time_secs);
+	regmac_transmit_power(squirrel->sqdb, transmitter, frame->wifi.dbm, frame->time_secs);
 
 	receiver_type = sqdb_station_type(squirrel->sqdb, receiver);
 	transmitter_type = sqdb_station_type(squirrel->sqdb, transmitter);
@@ -1481,7 +1481,7 @@ void squirrel_wifi_beacon(struct Squirrel *squirrel, struct StackFrame *frame, c
 	}
 
 	/* Record how much transmit power we have */
-	regmac_transmit_power(squirrel->sqdb, mac_address, frame->dbm, frame->time_secs);
+	regmac_transmit_power(squirrel->sqdb, mac_address, frame->wifi.dbm, frame->time_secs);
 
 	/* 
 	 * Process the FIXED information
@@ -1612,7 +1612,7 @@ void parse_lldp(struct Squirrel *squirrel, struct StackFrame *frame, const unsig
                 if (sublen > 2) {
                     sqdb_add_info(    squirrel->sqdb,
                                   frame->src_mac,
-                                  frame->bss_mac,
+                                  frame->wifi.bss_mac,
                                   "chasisid",
                                   (const char *)px+offset+1, sublen-1);
                     break;
@@ -1621,7 +1621,7 @@ void parse_lldp(struct Squirrel *squirrel, struct StackFrame *frame, const unsig
             case 5: /* system name */
                 sqdb_add_info(    squirrel->sqdb,
                               frame->src_mac,
-                              frame->bss_mac,
+                              frame->wifi.bss_mac,
                               "name",
                               (const char *)px+offset, sublen);
                 
@@ -1643,7 +1643,15 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct StackFrame *frame, con
 	unsigned version, type, subtype;
 	unsigned is_null=0;
 
-	version = px[0]&3;
+    /*
+     * First byte of MAC header.
+     * +--------+
+     * |      xx| Version (always zero)
+     * |    xx  | Type (10 = Data)
+     * |xxxx    | Subtype
+     * +--------+
+     */
+    version = px[0]&3;
 	type = (px[0]>>2)&3;
 	subtype = (px[0]>>4)&0xf;
 
@@ -1672,6 +1680,8 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct StackFrame *frame, con
 		is_null = 1;
 		offset += 2; /* QoS data */
 		break;
+    default:
+        break;
 	}
 
 	/* Mark this packet */
@@ -1679,48 +1689,48 @@ void squirrel_wifi_data(struct Squirrel *squirrel, struct StackFrame *frame, con
 	case 0:
 		frame->dst_mac = px+4;
 		frame->src_mac = px+10;
-		frame->bss_mac = px+16;
-		if (memcmp(frame->bss_mac, frame->dst_mac, 6) == 0 && is_null) {
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, DIR_STA_TO_BASE);
+		frame->wifi.bss_mac = px+16;
+		if (memcmp(frame->wifi.bss_mac, frame->dst_mac, 6) == 0 && is_null) {
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, DIR_STA_TO_BASE);
         } else if (memcmp("\xFF\xFF\xFF\xFF\xFF\xFF", frame->dst_mac, 6) == 0 && !is_null) {
             /* Regress: adhoc00166f946afd.pcap(35) */
-			regmac_station_data(squirrel->sqdb, frame->bss_mac, frame->src_mac, DIR_STA_TO_BASE);
+			regmac_station_data(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, DIR_STA_TO_BASE);
         } else
             ; //FRAMERR(frame, "unknown\n");
-		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 		break;
 	case 2:
 		/* This packet is sent by a station on the WIRED network through
 		 * the access-point bridge to a station on the WIRELESS side */
 		frame->dst_mac = px+4;
-		frame->bss_mac = px+10;
+		frame->wifi.bss_mac = px+10;
 		frame->src_mac = px+16;
 
 		if (!is_null && offset < length) {
-			regmac_station_data(squirrel->sqdb, frame->bss_mac, frame->dst_mac, DIR_RECEIVED);
-			if (memcmp(frame->src_mac, frame->bss_mac, 6) != 0)
-				regmac_station_wired(squirrel->sqdb, frame->bss_mac, frame->src_mac, DIR_SENT);
+			regmac_station_data(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, DIR_RECEIVED);
+			if (memcmp(frame->src_mac, frame->wifi.bss_mac, 6) != 0)
+				regmac_station_wired(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, DIR_SENT);
 		} else
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->dst_mac, DIR_BASE_TO_STA);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, DIR_BASE_TO_STA);
 
-		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 		break;
 	case 1:
-		frame->bss_mac = px+4;
+		frame->wifi.bss_mac = px+4;
 		frame->src_mac = px+10;
 		frame->dst_mac = px+16;
 
 		if (!is_null && offset < length) {
-			regmac_station_data(squirrel->sqdb, frame->bss_mac, frame->src_mac, DIR_SENT);
-			if (memcmp(frame->dst_mac, frame->bss_mac, 6) != 0)
-				regmac_station_wired(squirrel->sqdb, frame->bss_mac, frame->dst_mac, DIR_RECEIVED);
+			regmac_station_data(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, DIR_SENT);
+			if (memcmp(frame->dst_mac, frame->wifi.bss_mac, 6) != 0)
+				regmac_station_wired(squirrel->sqdb, frame->wifi.bss_mac, frame->dst_mac, DIR_RECEIVED);
 		} else
-			regmac_station_ctrl(squirrel->sqdb, frame->bss_mac, frame->src_mac, DIR_STA_TO_BASE);
+			regmac_station_ctrl(squirrel->sqdb, frame->wifi.bss_mac, frame->src_mac, DIR_STA_TO_BASE);
 
-		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->dbm, frame->time_secs);
+		regmac_transmit_power(squirrel->sqdb, frame->src_mac, frame->wifi.dbm, frame->time_secs);
 		break;
 	case 3:
-		frame->bss_mac = (const unsigned char*)"\0\0\0\0\0\0";
+		frame->wifi.bss_mac = (const unsigned char*)"\0\0\0\0\0\0";
 		frame->dst_mac = px+16;
 		frame->src_mac = px+24;
 		offset += 6;
@@ -1889,7 +1899,7 @@ unsigned filtered_out(struct StackFrame *frame, const char *mac_address)
 		return 1;
 	if (frame->dst_mac && memcmp(frame->dst_mac, mac_address, 6) == 0)
 		return 1;
-	if (frame->bss_mac && memcmp(frame->bss_mac, mac_address, 6) == 0)
+	if (frame->wifi.bss_mac && memcmp(frame->wifi.bss_mac, mac_address, 6) == 0)
 		return 1;
 	return 0;
 }
@@ -1913,6 +1923,14 @@ squirrel_wifi_frame(struct Squirrel *squirrel,
 	unsigned version, type, subtype;
 
 
+    /*
+     * First byte of MAC header.
+     * +--------+
+     * |      xx| Version (always zero)
+     * |    xx  | Type (10 = Data)
+     * |xxxx    | Subtype
+     * +--------+
+     */
 	version = px[0]&3;
 	type = (px[0]>>2)&3;
 	subtype = (px[0]>>4)&0xf;

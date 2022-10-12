@@ -142,11 +142,11 @@ void bonjour_parse_resource_record(struct Squirrel *squirrel, struct StackFrame 
              * So, we want to mark this as an "iPhone" and save the name "Robert-Graham"
              */
             if (endsWith(tmpname, "iPhone")) {
-                sqdb_add_info(	squirrel->sqdb, 
-			            frame->src_mac,
-			            frame->bss_mac,
-			            "system",
-			            "iPhone", -1);
+                sqdb_add_info(squirrel->sqdb,
+                              frame->src_mac,
+                              frame->wifi.bss_mac,
+                              "system",
+                              "iPhone", -1);
                 if (strlen(tmpname) > 6) {
                     tmpname[strlen(tmpname)-6] = '\0';
                     while (tmpname[0] && ispunct(tmpname[strlen(tmpname)-1]))
@@ -154,11 +154,11 @@ void bonjour_parse_resource_record(struct Squirrel *squirrel, struct StackFrame 
                 }
             }
 
-            sqdb_add_info(	squirrel->sqdb, 
-			        frame->src_mac,
-			        frame->bss_mac,
-			        "name",
-			        tmpname, -1);
+            sqdb_add_info(squirrel->sqdb,
+                          frame->src_mac,
+                          frame->wifi.bss_mac,
+                          "name",
+                          tmpname, -1);
 
 
             /* Try to save the IP address */
@@ -171,11 +171,11 @@ void bonjour_parse_resource_record(struct Squirrel *squirrel, struct StackFrame 
                         (ip_address>> 8)&0xFF,
                         (ip_address>> 0)&0xFF
                         );
-                    sqdb_add_info(	squirrel->sqdb, 
-			                frame->src_mac,
-			                frame->bss_mac,
-			                "ip",
-			                textip, -1);
+                    sqdb_add_info(squirrel->sqdb,
+                                  frame->src_mac,
+                                  frame->wifi.bss_mac,
+                                  "ip",
+                                  textip, -1);
 
                 }
             }

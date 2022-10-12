@@ -293,7 +293,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
 
     sqdb_add_info(	squirrel->sqdb, 
 					frame->src_mac,
-					frame->bss_mac,
+					frame->wifi.bss_mac,
 					"ip",
 					iptext, -1);
 
@@ -301,12 +301,12 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
     if (find_string(px, length, "CaptiveNetworkSupport/1.0 wispr", 0)) {
         sqdb_add_info(	squirrel->sqdb, 
 						frame->src_mac,
-						frame->bss_mac,
+						frame->wifi.bss_mac,
 						"ip",
 						iptext, -1);
         sqdb_add_info(	squirrel->sqdb, 
 						frame->src_mac,
-						frame->bss_mac,
+						frame->wifi.bss_mac,
 						"system",
 						"iPod", -1);
     }
@@ -315,7 +315,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
     if (find_string(px, length, "; Windows NT 5.1; ", 0)) {
         sqdb_add_info(	squirrel->sqdb, 
 						frame->src_mac,
-						frame->bss_mac,
+						frame->wifi.bss_mac,
 						"system",
 						"WinXP", -1);
     }
@@ -325,7 +325,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
         if (find_string(px, length, " Linux i686;", &osver)) {
             sqdb_add_info(	squirrel->sqdb, 
 						    frame->src_mac,
-						    frame->bss_mac,
+						    frame->wifi.bss_mac,
 						    "cpu",
 						    "x86", -1);
 
@@ -338,7 +338,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
                 lang[2] = '\0';
                 sqdb_add_info(	squirrel->sqdb, 
 						        frame->src_mac,
-						        frame->bss_mac,
+						        frame->wifi.bss_mac,
 						        "lang",
 						        lang, -1);
             }
@@ -354,7 +354,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
             sprintf_s(systemtext, sizeof(systemtext), "Unbuntu/%u.%u", ver_major, ver_minor);
             sqdb_add_info(	squirrel->sqdb, 
 						    frame->src_mac,
-						    frame->bss_mac,
+						    frame->wifi.bss_mac,
 						    "system",
 						    systemtext, -1);
 
@@ -370,7 +370,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
 
                	sqdb_add_info(	squirrel->sqdb, 
 						        frame->src_mac,
-						        frame->bss_mac,
+						        frame->wifi.bss_mac,
 						        "ip",
 						        iptext, -1);
 
@@ -381,7 +381,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
                 sprintf_s(systemtext, sizeof(systemtext), "MacOS/10.%u.%u", ver_minor, ver_minor_sub);
                	sqdb_add_info(	squirrel->sqdb, 
 						        frame->src_mac,
-						        frame->bss_mac,
+						        frame->wifi.bss_mac,
 						        "system",
 						        systemtext, -1);
 
@@ -399,7 +399,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
 
                	sqdb_add_info(	squirrel->sqdb, 
 						        frame->src_mac,
-						        frame->bss_mac,
+						        frame->wifi.bss_mac,
 						        "ip",
 						        iptext, -1);
 
@@ -410,7 +410,7 @@ void squirrel_http_useragent(struct Squirrel *squirrel, struct StackFrame *frame
                 sprintf_s(systemtext, sizeof(systemtext), "iPhone/%u.%u.%u", ver_major, ver_minor, ver_minor_sub);
                	sqdb_add_info(	squirrel->sqdb, 
 						        frame->src_mac,
-						        frame->bss_mac,
+						        frame->wifi.bss_mac,
 						        "system",
 						        systemtext, -1);
 

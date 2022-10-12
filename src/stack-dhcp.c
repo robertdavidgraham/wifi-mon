@@ -185,11 +185,11 @@ void process_dhcp_options(struct Squirrel *squirrel, struct StackFrame *frame, c
 					memcpy(hostname, px+offset, len);
 					hostname[len] = '\0';
 					
-					sqdb_add_info(	squirrel->sqdb, 
-									frame->src_mac,
-									frame->bss_mac,
-									"name",
-									hostname, -1);
+					sqdb_add_info(squirrel->sqdb,
+                                  frame->src_mac,
+                                  frame->wifi.bss_mac,
+                                  "name",
+                                  hostname, -1);
 					free(hostname);
 					break;
 				default:
@@ -216,7 +216,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct StackFrame *frame, c
 					/*REF: wifi-2009-02-09.pcap(126) */
 					sqdb_add_info(	squirrel->sqdb, 
 									frame->src_mac,
-									frame->bss_mac,
+									frame->wifi.bss_mac,
 									"domain",
 									domain, -1);
 					free(domain);
@@ -228,7 +228,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct StackFrame *frame, c
 					/*REF: wifi-2009-02-09.pcap(165) */
 					sqdb_add_info(	squirrel->sqdb, 
 									frame->dst_mac, /* server to client */
-									frame->bss_mac,
+									frame->wifi.bss_mac,
 									"domain",
 									domain, -1);
 					free(domain);
@@ -274,7 +274,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct StackFrame *frame, c
                         );
 					sqdb_add_info(	squirrel->sqdb, 
 									dhcp->chaddr,
-									frame->bss_mac,
+									frame->wifi.bss_mac,
 									"ip",
 									iptext, -1);
                 }
@@ -353,7 +353,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct StackFrame *frame, c
 						/*REF: wifi-2009-02-09.pcap(21552) */
 						sqdb_add_info(	squirrel->sqdb, 
 										frame->src_mac,
-										frame->bss_mac,
+										frame->wifi.bss_mac,
 										"system",
 										system, -1);
 					} else {
@@ -363,7 +363,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct StackFrame *frame, c
 						sys[len] = '\0';
 						sqdb_add_info(	squirrel->sqdb, 
 										frame->src_mac,
-										frame->bss_mac,
+										frame->wifi.bss_mac,
 										"system",
 										sys, -1);
 						free(sys);
@@ -425,7 +425,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct StackFrame *frame, c
 					/*REF: wifi-2009-02-09.pcap(126) */
 					sqdb_add_info(	squirrel->sqdb, 
 									frame->src_mac,
-									frame->bss_mac,
+									frame->wifi.bss_mac,
 									"ip",
 									ip_text, -1);
 					break;
@@ -487,7 +487,7 @@ void process_dhcp_options(struct Squirrel *squirrel, struct StackFrame *frame, c
                         nametext[strlen(nametext)-1] = '\0';
 					sqdb_add_info(	squirrel->sqdb, 
 									frame->src_mac,
-									frame->bss_mac,
+									frame->wifi.bss_mac,
 									"name",
 									nametext, -1);
 					//FRAMERR(frame, "%s: %s\n", "dhcp", "fixme");

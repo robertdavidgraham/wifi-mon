@@ -190,11 +190,7 @@ struct SQDB
      * pass that information in here via a "global" variable.
      * This is stupid, and I need to fix this eventually.
      */
-    struct Kludgy {
-        unsigned channel;
-        int dbm;
-        time_t time_stamp;
-    } kludge;
+    const struct StackFrame *kludgex;
 };
 
 struct TMP_STATIONS {

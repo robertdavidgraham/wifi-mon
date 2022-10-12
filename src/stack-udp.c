@@ -193,12 +193,12 @@ void squirrel_udp(struct Squirrel *squirrel, struct StackFrame *frame, const uns
                     );
 			    sqdb_add_info(	squirrel->sqdb, 
 							    frame->src_mac,
-							    frame->bss_mac,
+                                frame->wifi.bss_mac,
 							    "ip",
 							    iptext, -1);
 			    sqdb_add_info(	squirrel->sqdb, 
 							    frame->src_mac,
-							    frame->bss_mac,
+                                frame->wifi.bss_mac,
 							    "system",
 							    "MacOS", -1);
             }

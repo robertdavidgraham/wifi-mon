@@ -1020,7 +1020,7 @@ void squirrel_dns(struct Squirrel *squirrel, struct StackFrame *frame, const uns
                 );
             sqdb_add_info(	squirrel->sqdb, 
 			        frame->src_mac,
-			        frame->bss_mac,
+                          frame->wifi.bss_mac,
 			        "ip",
 			        textip, -1);
         }

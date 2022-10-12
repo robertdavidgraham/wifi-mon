@@ -36,8 +36,6 @@ struct StackFrame
 	const char *filename;
 	const unsigned char *src_mac;
 	const unsigned char *dst_mac;
-	const unsigned char *bss_mac;
-	unsigned			 bss_direction;
 	const char *netbios_source;
 	const char *netbios_destination;
 	unsigned src_ipv4;
@@ -46,7 +44,13 @@ struct StackFrame
 	unsigned dst_port;
 	unsigned char src_ipv6[16];
 	unsigned char dst_ipv6[16];
-	int dbm;
+    struct wifi {
+        const unsigned char *bss_mac;
+        unsigned             bss_direction;
+        int dbm;
+        int dbm_noise;
+        unsigned channel;
+    } wifi;
     unsigned ip_ttl;
     const unsigned char *px;
 };

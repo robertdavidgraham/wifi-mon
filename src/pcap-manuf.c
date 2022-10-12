@@ -11,33 +11,7 @@ struct Manufs {
     char *desc;
 };
 
-#if 0
-{0x08:E6:89 Apple    Apple, Inc.
-{0x08:F6:9C Apple    Apple, Inc.
-{0x0C:70:4A HuaweiTe    Huawei Technologies Co.,Ltd
-{0x10:94:BB Apple    Apple, Inc.
-{0x2C:61:F6 Apple    Apple, Inc.
-{0x38:80:DF Motorola    Motorola Mobility LLC, a Lenovo Company
-{0x3C:DC:BC SamsungE    Samsung Electronics Co.,Ltd
-{0x40:98:AD Apple    Apple, Inc.
-{0x50:A6:7F Apple    Apple, Inc.
-{0x50:BC:96 Apple    Apple, Inc.
-{0x64:70:33 Apple    Apple, Inc.
-{0x80:AD:16 XiaomiCo    Xiaomi Communications Co Ltd
-{0x88:AE:07 Apple    Apple, Inc.
-{0x94:BF:2D Apple    Apple, Inc.
-{0x98:22:EF LiteonTe    Liteon Technology Corporation
-{0xC0:B6:58 Apple    Apple, Inc.
-{0xC4:61:8B Apple    Apple, Inc.
-{0xC4:84:66 Apple    Apple, Inc.
-{0xCC:2D:B7 Apple    Apple, Inc.
-{0xD0:2B:20 Apple    Apple, Inc.
-{0xD4:61:DA Apple    Apple, Inc.
-{0xD4:A3:3D Apple    Apple, Inc.
-{0xDC:56:E7 Apple    Apple, Inc.
-{0xE4:E0:A6 Apple    Apple, Inc.
-{0xF0:0F:EC HuaweiTe    Huawei Technologies Co.,Ltd
-#endif
+
 
 struct Manufs xmanufs[] = {
     {0x00026f,  "Senao     ", "Senao Wireless, access-point"}, /* access-point */
@@ -211,8 +185,10 @@ struct Manufs xmanufs[] = {
     {0x0c6076,  "Foxconn   ", "Hon Hai Precision, Windows Notebook"}, /*[00:24:2b:70:86:78] station: WinXP notebook */	
 /**/{0x0CDDEF,  "Nokia     ", "Nokia"},
     {0x0CEEE6,  "Foxconn   ", "Hon Hai Precision"},
+    {0x18E829,  "Ubiquiti  ", "Ubiquiti"},
     {0x1c4bd6,  "AzureWave ", "AzureWave Technologies"},
     {0x28FF3C,  "Apple     ", "Apple"},
+    {0x2C3F0B,  "Meraki (C)", "Cisco Meraki"},
     {0x2C8158,  "Foxconn   ", "Hon Hai Precision"},
     {0x2ca835,  "BLACKBERRY", "Research In Motion"},
     {0x307c30,  "BLACKBERRY", "Research In Motion"},
@@ -233,6 +209,7 @@ struct Manufs xmanufs[] = {
 /**/{0x5C57C8,  "Nokia     ", "Nokia"},
     {0x5C5948,  "Apple     ", "Apple"},
     {0x60334B,  "Apple     ", "Apple"},
+    {0x60B76E,  "Google    ", "Google"},
     {0x60fb42,  "Apple     ", "Apple"},
     {0x645AED,  "Apple     ", "Apple"},
     {0x64b9e8,  "Apple     ", "Apple"},
@@ -240,12 +217,14 @@ struct Manufs xmanufs[] = {
     {0x701a04,  "Lite-On   ", "Lite-On Computer Corporation"},
     {0x70f104,  "Lite-On   ", "Lite-On Computer Corporation"},
     {0x70f1a1,  "Lite-On   ", "Lite-On Computer Corporation"},
+    {0x74ACB9,  "Ubiquiti  ", "Ubiquiti"},
     {0x78E400,  "Foxconn   ", "Hon Hai Precision"},
     {0x7C6D62,  "Apple     ", "Apple"},
     {0x7CC537,  "Apple     ", "Apple"},
     {0x78DD08,  "Foxconn   ", "Hon Hai Precision, Windows Notebook"},
 /**/{0x80501B,  "Nokia     ", "Nokia"},
     {0x881908,  "Apple     ", "Apple"},
+    {0x8C6A8D,  "Technicolr", "Technicolor"},
     {0x9027E4,  "Apple     ", "Apple"},
     {0x904CE5,  "Foxconn   ", "Hon Hai Precision"},
 
@@ -261,6 +240,7 @@ struct Manufs xmanufs[] = {
 /**/{0xA87B39,  "Nokia     ", "Nokia"},
     {0xb482fe,  "Askey     ", "Askey Computer Corp"},
 /**/{0xC038F9,  "Nokia     ", "Nokia"},
+    {0xC09435,  "ARRIS     ", "ARRIS"},
     {0xc42c03,  "Apple     ", "Apple"},
     {0xC417FE,  "Foxconn   ", "Hon Hai Precision"},
     {0xC44619,  "Foxconn   ", "Hon Hai Precision, Windows Notebook"},
@@ -624,7 +604,9 @@ struct Changes {
     {"LgElectr\tL", "LG        "},
 	{"Microsoft C", "Microsoft "},
 	{"Microsoft M", "Microsoft "},
-	{"Motorola Mo", "Motorola  "},
+    {"MITSUMI ELE", "Mitsumi   "},
+    {"Mojo Networ", "Mojo Net  "},
+    {"Motorola Mo", "Motorola  "},
     {"Motorola\tM", "Motorola  "},
 	{"Murata Manu", "Murata    "},
 
@@ -758,4 +740,3 @@ manuf2_from_mac(const unsigned char *mac_address)
     }
     return "";
 }
-

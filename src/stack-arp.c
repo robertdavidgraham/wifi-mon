@@ -112,11 +112,11 @@ void squirrel_arp(struct Squirrel *squirrel, struct StackFrame *frame, const uns
 			(ip_src>> 8)&0xFF,
 			(ip_src>> 0)&0xFF
 			);
-		sqdb_add_info(	squirrel->sqdb, 
-						mac_src,
-						frame->bss_mac,
-						"ip",
-						ip_text, -1);
+		sqdb_add_info(squirrel->sqdb,
+                      mac_src,
+                      frame->wifi.bss_mac,
+                      "ip",
+                      ip_text, -1);
         break;
     }
 

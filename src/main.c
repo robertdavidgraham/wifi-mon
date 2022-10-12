@@ -21,6 +21,7 @@
 #include "util-annexk.h"
 #include "util-unused.h"
 
+#include <unistd.h>
 //#ifdef WIN32
 //#include <direct.h> /* for Posix mkdir() */
 //#else
@@ -537,11 +538,11 @@ static unsigned filtered_out(struct StackFrame *frame, const char *mac_address)
 		return 1;
 	if (frame->dst_mac && memcmp(frame->dst_mac, mac_address, 6) == 0)
 		return 1;
-    if (frame->bss_mac == 0 && mac_address == 0)
+    if (frame->wifi.bss_mac == 0 && mac_address == 0)
         return 1;
-    if (frame->bss_mac == 0 || mac_address == 0)
+    if (frame->wifi.bss_mac == 0 || mac_address == 0)
         return 0;
-	if (frame->bss_mac && memcmp(frame->bss_mac, mac_address, 6) == 0)
+	if (frame->wifi.bss_mac && memcmp(frame->wifi.bss_mac, mac_address, 6) == 0)
 		return 1;
 
 	return 0;
@@ -1071,6 +1072,10 @@ int main(int argc, char **argv)
 	struct Squirrel *squirrel;
 
 	fprintf(stderr, "[+] wifi-mon 1.3 - 2008-2022 (c) Robert Graham\n");
+
+    {
+        fprintf(stderr, "    cwd=%s\n", getcwd(0,0));
+    }
 	/*fprintf(stderr, "-- build = %s %s (%u-bits)\n", __DATE__, __TIME__, (unsigned)sizeof(size_t)*8);*/
 
     /*

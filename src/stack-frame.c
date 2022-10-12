@@ -2,6 +2,7 @@
 #include "squirrel.h"
 #include "sqdb2.h"
 #include "util-extract.h"
+#include <string.h>
 
 static int
 wifi_frequency_to_channel(int frequency)
@@ -30,21 +31,23 @@ stack_parse_frame(struct Squirrel *squirrel,
                   struct StackFrame *frame,
                   const unsigned char *px, unsigned length)
 {
+    squirrel->sqdb->kludgex = frame;
+
+    /* Clear the 'wifi' information. We'll fill in this structure
+     * from the radiotap header, if it exists. */
+    memset(&frame->wifi, 0, sizeof(frame->wifi));
+
     /* Record the current time */
     if (squirrel->now != (time_t)frame->time_secs) {
         squirrel->now = (time_t)frame->time_secs;
 
         if (squirrel->first == 0)
             squirrel->first = frame->time_secs;
-
-        squirrel->sqdb->kludge.time_stamp = frame->time_secs;
     }
 
-    squirrel->sqdb->kludge.dbm = 0;
-    squirrel->sqdb->kludge.channel = 0;
+
 
     /* Clear the information that we will set in the frame */
-    //squirrel->frame.flags2 = 0;
     frame->flags.clear = 0;
     squirrel->something_new_found = 0;
 
@@ -94,86 +97,136 @@ stack_parse_frame(struct Squirrel *squirrel,
             break;
 
         case 127: /* Radiotap headers */
-            if (length < 4) {
-                //FRAMERR(frame, "radiotap headers too short\n");
+
+            if (length < 8) {
+                squirrel->stats.frame_too_short++;
                 return;
-            }
-        {
-            unsigned version = px[0];
-            unsigned header_length = ex16le(px+2);
-            unsigned features = ex32le(px+4);
-            unsigned flags = px[16];
-            unsigned offset;
-            int dbm_noise = 0;
-            unsigned lock_quality = 0;
+            } else {
+                struct {
+                    unsigned revision;
+                    unsigned length;
+                    uint64_t present;
+                    unsigned flags;
+                } hdr = {0};
+                unsigned offset;
 
-            frame->dbm = 0;
+                hdr.revision = px[0];
+                hdr.length = ex16le(px+2);
+                hdr.present = ex64le(px+4);
 
-            if (version != 0 || header_length > length) {
-                FRAMERR(frame, "radiotap headers corrupt\n");
-                return;
-            }
-
-            /* If FCS is present at the end of the packet, then change
-             * the length to remove it */
-            if (features & 0x4000) {
-                unsigned fcs_header = ex32le(px+header_length-4);
-                unsigned fcs_frame = ex32le(px+length-4);
-                if (fcs_header == fcs_frame)
-                    length -= 4;
-                if (header_length >= length) {
-                    FRAMERR(frame, "radiotap headers corrupt\n");
+                /* Check for corruption */
+                if (hdr.revision != 0 || hdr.length >= length) {
+                    squirrel->stats.frame_header_corrupt++;
                     return;
                 }
-            }
 
-            offset = 8;
+                /* bit: Extended 'present' flags */
+                if (hdr.present & 0x80000000ULL) {
+                    offset = 16;
+                } else {
+                    offset = 8;
+                }
 
-            if (features & 0x000001) offset += 8;    /* TSFT - Timestamp */
-            if (features & 0x000002) {
-                flags = px[offset];
-                offset += 1;
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+#define ALIGN(x,n)              __ALIGN_MASK(x,n-1)
+#define _SKIP(offset, max, n) (offset)+=(n)
+#define _ALGN(offset, max, n) ALIGN(offset,n);if ((offset) + (n) > (max)) return
 
-                /* If there's an FCS at the end, then remove it so that we
-                 * don't try to decode it as payload */
-                if (flags & 0x10)
-                    length -= 4;
-            }
-            if (features & 0x000004) offset += 1;    /* Rate */
-            if (features & 0x000008 && offset+2<header_length) {
-                unsigned frequency = ex16le(px+offset);
-                int channel;
-                channel = wifi_frequency_to_channel(frequency);
-                squirrel->sqdb->kludge.channel = channel;
-                offset += 2;
-            }
-            if (features & 0x000008 && offset+2<header_length) {
-                /*unsigned channel_flags = ex16le(px+offset);*/
-                offset += 2;
-            }
-            if (features & 0x000010) offset += 2;    /* FHSS */
-            if (features & 0x000020 && offset+1<header_length) {
-                frame->dbm = ((signed char*)px)[offset];
-                squirrel->sqdb->kludge.dbm = frame->dbm;
-                offset += 1;
-            }
-            if (features & 0x000040 && offset+1<header_length) {
-                dbm_noise = ((signed char*)px)[offset];
+                /* bit: TSFT: MAC timestamp */
+                if (hdr.present & 0x000001) {
+                    _ALGN(offset, hdr.length, 8);
+                    _SKIP(offset, hdr.length, 8);
+                }
 
+                /* bit: flags */
+                if (hdr.present & 0x000002) {
+                    _ALGN(offset, hdr.length, 1);
+                    hdr.flags = px[offset];
+                    _SKIP(offset, hdr.length, 1);
+
+                    if (hdr.flags & 0x01)
+                        squirrel->stats.frame_unknown_flags++;
+                    if (hdr.flags & 0x02)
+                        ;//squirrel->stats.frame_unknown_flags++;
+                    if (hdr.flags & 0x04) {
+                        /* WEP??? */
+                        squirrel->stats.frame_unknown_flags++;
+                    }
+                    if (hdr.flags & 0x08) {
+                        /* Fragmentation?? */
+                        squirrel->stats.frame_unknown_flags++;
+                    }
+
+                    /* FCS present */
+                    if (hdr.flags & 0x10) {
+                        /* remove it from end of packet */
+                        length -= 4;
+                        if (hdr.length >= length) {
+                            squirrel->stats.frame_header_corrupt++;
+                            return;
+                        }
+                    }
+
+                    if (hdr.flags & 0x20)
+                        squirrel->stats.frame_unknown_flags++;
+
+                    /* FCS error */
+                    if (hdr.flags & 0x40) {
+                        squirrel->stats.frame_fcs_error++;
+                        return;
+                    }
+
+                    if (hdr.flags & 0x80)
+                        squirrel->stats.frame_unknown_flags++;
+
+                }
+
+                /* bit: rate */
+                if (hdr.present & 0x000004) {
+                    _ALGN(offset, hdr.length, 1);
+                    _SKIP(offset, hdr.length, 1);
+                }
+
+                /* bit: channel */
+                if (hdr.present & 0x000008) {
+                    unsigned frequency;
+                    unsigned flags;
+
+                    _ALGN(offset, hdr.length, 4);
+                    frequency = ex16le(px+offset);
+                    flags = ex16le(px+offset+2);
+                    _SKIP(offset, hdr.length, 4);
+
+                    frame->wifi.channel = wifi_frequency_to_channel(frequency);
+                }
+
+                /* bit: FHSS */
+                if (hdr.present & 0x000010) {
+                    _ALGN(offset, hdr.length, 2);
+                    _SKIP(offset, hdr.length, 2);
+                }
+                /* bit: signal strength */
+                if (hdr.present & 0x000020) {
+                    _ALGN(offset, hdr.length, 1);
+                    frame->wifi.dbm = ((signed char*)px)[offset];
+                    _SKIP(offset, hdr.length, 1);
+                }
+
+                /* bit: noise */
+                if (hdr.present & 0x000040) {
+                    _ALGN(offset, hdr.length, 1);
+                    frame->wifi.dbm_noise = ((signed char*)px)[offset];
+                    _SKIP(offset, hdr.length, 1);
+                }
+
+                /* bit: lock quality */
+                if (hdr.present & 0x000080) {
+                    _ALGN(offset, hdr.length, 1);
+                    _SKIP(offset, hdr.length, 1);
+                }
+
+                squirrel_wifi_frame(squirrel, frame, px+hdr.length, length-hdr.length);
             }
-            if (features & 0x000080 && offset+1<header_length) {
-                lock_quality = ((unsigned char*)px)[offset];
-            }
-
-            if (flags & 0x40) {
-                /* FCS/CRC error */
-                return;
-            }
-
-
-            squirrel_wifi_frame(squirrel, frame, px+header_length, length-header_length);
-
-        }
             break;
         default:
             FRAMERR(frame, "unknown linktype = %d (expected Ethernet or wifi)\n", frame->layer2_protocol);

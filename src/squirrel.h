@@ -105,6 +105,12 @@ struct Squirrel
 	struct FerretEngine *eng[16];
 	unsigned engine_count;
 
+    struct {
+        uint64_t frame_too_short;
+        uint64_t frame_header_corrupt;
+        uint64_t frame_fcs_error;
+        uint64_t frame_unknown_flags;
+    } stats;
 
 	/**
 	 * A structure used when printout out the JavaScript Tree info

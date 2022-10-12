@@ -316,8 +316,10 @@ sqdb_create_bssid(struct SQDB *sqdb, const unsigned char *bssid)
 		*r_entry = (struct SQDB_AccessPoint*)malloc(sizeof(**r_entry));
 		memset(*r_entry, 0, sizeof(**r_entry));
 		memcpy((*r_entry)->bssid, bssid, 6);
-        if (sqdb->kludge.channel) {
-            (*r_entry)->channels[0] = (unsigned char)sqdb->kludge.channel;
+        if (sqdb->kludgex->wifi.channel < 1 || 14 < sqdb->kludgex->wifi.channel)
+            printf(".");
+        if (sqdb->kludgex->wifi.channel) {
+            (*r_entry)->channels[0] = (unsigned char)sqdb->kludgex->wifi.channel;
             (*r_entry)->channel_count = 1;
         }
 
@@ -325,10 +327,10 @@ sqdb_create_bssid(struct SQDB *sqdb, const unsigned char *bssid)
 		xmac = xmac_create(&sqdb->macs, bssid);
 		xmac->type = STATION_TYPE_BASE;
 		xmac->base = *r_entry;
-        (*r_entry)->first = sqdb->kludge.time_stamp;
+        (*r_entry)->first = sqdb->kludgex->time_secs;
 	}
 
-    (*r_entry)->last = sqdb->kludge.time_stamp;
+    (*r_entry)->last = sqdb->kludgex->time_secs;
 	pixie_leave_critical_section(sqdb->cs);
 	return *r_entry;
 }
@@ -683,7 +685,7 @@ void regmac_event(struct SQDB *sqdb,
 	struct SQDB_SubStation *sta;
 	struct SQDB_AccessPoint *ap;
     struct SQDB_Event *event;
-    time_t timestamp = sqdb->kludge.time_stamp;
+    time_t timestamp = sqdb->kludgex->time_secs;
 
 	pixie_enter_critical_section(sqdb->cs);
 
@@ -697,7 +699,7 @@ void regmac_event(struct SQDB *sqdb,
 
     /* If there is no current event, create one */
     if (sta->current_event == NULL)
-        event_new(sqdb, sta, ap, sqdb->kludge.time_stamp, event_type);
+        event_new(sqdb, sta, ap, sqdb->kludgex->time_secs, event_type);
     event = sta->current_event;
 
     /* update latest time */
