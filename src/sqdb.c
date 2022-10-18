@@ -1054,6 +1054,10 @@ unsigned sqdb_add_beacon(
 	struct SQDB_AccessPoint *entry;
 	/*unsigned is_new = false;*/
 
+    /* FIXME: remove this test feature */
+    if (channel < 1 || 100 < channel) {
+        printf(".");
+    }
 	pixie_enter_critical_section(sqdb->cs);
 
 	/*  

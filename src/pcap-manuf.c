@@ -25,7 +25,7 @@ struct Manufs xmanufs[] = {
     {0x000cf1,  "Intel     ", "Intel Centrino PRO/Wireless"},/* [00:0c:f1:23:be:46] station: Windows Notebook */
     {0x000ded,  "Cisco     ", "Cisco Systems, access-point"},
     {0x000d72,  "2wire     ", "2Wire, access-point"},
-    {0x000e38,  "Cisco     ", "Cisco Systems, access-point"},
+    {0x000e38,  "Cisco     " , "Cisco Systems, access-point"},
     {0x000e83,  "Cisco     ", "Cisco Systems, access-point"},
     {0x000ae4,  "Wistron   ", "Wistron, station, notebook"},
     {0x000f3d,  "D-Link    ", "D-Link, access-point"},
@@ -180,6 +180,7 @@ struct Manufs xmanufs[] = {
     {0x00601d,  "Lucent    ", "Lucent Technologies"},
 /**/{0x00BD3A,  "Nokia     ", "Nokia"},
     {0x00c0a8,  "GVC       ", "GVC Corporation, modem/fax/phone"},
+    {0x102C6B,  "Ampak     ", "Ampak Technologies"},
     {0x041e64,  "Apple     ", "Apple"},
     {0x08C5E1,  "Samsung   ", "Samsung Electromech Thailand"},
     {0x0c6076,  "Foxconn   ", "Hon Hai Precision, Windows Notebook"}, /*[00:24:2b:70:86:78] station: WinXP notebook */	
@@ -224,6 +225,7 @@ struct Manufs xmanufs[] = {
     {0x78DD08,  "Foxconn   ", "Hon Hai Precision, Windows Notebook"},
 /**/{0x80501B,  "Nokia     ", "Nokia"},
     {0x881908,  "Apple     ", "Apple"},
+    {0x8871B1,  "ARRIS     ", "Arris Group, Inc."},
     {0x8C6A8D,  "Technicolr", "Technicolor"},
     {0x9027E4,  "Apple     ", "Apple"},
     {0x904CE5,  "Foxconn   ", "Hon Hai Precision"},
@@ -549,6 +551,7 @@ struct Changes {
 
 	{"Arcadyan Te", "Arcadyan  "},
     {"ARRIS Group", "ARRIS     "},
+    {"Aruba Netwo", "Aruba     "},
 	{"ASKEY COMPU",	"Askey     "},
 	{"Askey Compu", "Askey     "},
 	{"Askey     ",	"Askey     "},
@@ -570,6 +573,7 @@ struct Changes {
 
 	{"Cisco-Link",	"Linksys(C)"},
 	{"Cisco Syste", "Cisco     "},
+    {"Equitech In", "Equitech  "},
 	
 	{"GemTek Tech", "GemTek    "},
 	{"Gemtek Tech", "GemTek    "},

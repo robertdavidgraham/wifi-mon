@@ -120,17 +120,29 @@ stack_parse_frame(struct Squirrel *squirrel,
                     return;
                 }
 
-                /* bit: Extended 'present' flags */
-                if (hdr.present & 0x80000000ULL) {
-                    offset = 16;
-                } else {
-                    offset = 8;
-                }
-
+                /* All fields are 'aligned' on even boundaries, depending on
+                 * the size of elements. */
 #define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
 #define ALIGN(x,n)              __ALIGN_MASK(x,n-1)
 #define _SKIP(offset, max, n) (offset)+=(n)
-#define _ALGN(offset, max, n) ALIGN(offset,n);if ((offset) + (n) > (max)) return
+#define _ALGN(offset, max, n) (offset)=ALIGN(offset,n);if ((offset) + (n) > (max)) return
+
+                /* Check for chained "present" flags */
+                offset = 4;
+                for (;;) {
+                    unsigned it_present;
+                    _ALGN(offset, hdr.length, 4);
+                    it_present = ex32le(px+offset);
+                    _SKIP(offset, hdr.length, 4);
+
+                    /* Continue processing 'present' fields until the
+                     * high-order bit is  clear, incrementing the 'offset'
+                     * field by 4 each time. */
+                    if (offset & 0x80000000)
+                        continue;
+                    else
+                        break;
+                }
 
                 /* bit: TSFT: MAC timestamp */
                 if (hdr.present & 0x000001) {
@@ -187,12 +199,14 @@ stack_parse_frame(struct Squirrel *squirrel,
                     _SKIP(offset, hdr.length, 1);
                 }
 
-                /* bit: channel */
+                /* bit 3: channel
+                 * align = 2-bytes
+                 * size = 4-bytes */
                 if (hdr.present & 0x000008) {
                     unsigned frequency;
                     unsigned flags;
 
-                    _ALGN(offset, hdr.length, 4);
+                    _ALGN(offset, hdr.length, 2);
                     frequency = ex16le(px+offset);
                     flags = ex16le(px+offset+2);
                     _SKIP(offset, hdr.length, 4);
